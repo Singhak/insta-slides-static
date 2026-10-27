@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Insta Slides</title>
+<style>
+:root{--bg:#f4f3f8;--card:#fff;--ink:#14171c;--mut:#667085;--line:#e6e4ee;--pri:#7c3aed;--pri2:#db2777;--soft:#f5f3ff;--sh:0 1px 2px rgba(16,24,40,.05),0 4px 16px rgba(16,24,40,.06)}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1013;--card:#171a1f;--ink:#eef0f3;--mut:#98a2b3;--line:#2a2f37;--soft:#1e1a2e;--sh:0 1px 2px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,sans-serif}
+header{padding:14px 20px;background:linear-gradient(120deg,var(--pri),var(--pri2));color:#fff;font-weight:700;font-size:17px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+header small{font-weight:400;font-size:12px;opacity:.85;margin-left:auto}
+main{display:grid;grid-template-columns:minmax(300px,1fr) minmax(300px,1fr) 300px;gap:16px;padding:16px;align-items:start}
+@media(max-width:1000px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:var(--sh)}
+h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
+input,textarea,select,button{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);
+  border-radius:10px;padding:8px 11px;width:100%;transition:border-color .15s,box-shadow .15s,background .15s}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px color-mix(in srgb,var(--pri) 22%,transparent)}
+button:hover:not(:disabled){border-color:var(--pri)}button:active:not(:disabled){transform:scale(.98)}
+input[type=color]{padding:2px;height:34px}
+input[type=checkbox]{width:auto;accent-color:var(--pri)}
+textarea{resize:vertical;min-height:70px}
+button{cursor:pointer;width:auto}
+button.pri{background:linear-gradient(120deg,var(--pri),var(--pri2));border-color:transparent;color:#fff;font-weight:600;padding:11px 18px;box-shadow:0 4px 12px rgba(124,58,237,.3)}
+#aiBtn{width:100%}#gen{width:100%;font-size:15px}
+#share{width:100%;background:var(--soft);color:var(--pri);border-color:var(--pri);font-weight:600;padding:11px}
+button:disabled{opacity:.5;cursor:wait}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}
+.slide{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px}
+.slide.sel{border-color:var(--pri);background:var(--soft)}
+.slide .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:600}
+.slide .hd span{display:flex;gap:4px}
+.slide .hd button{padding:2px 8px}
+#preview{position:sticky;top:16px}
+.frame{width:100%;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#000;position:relative;box-shadow:0 8px 24px rgba(16,24,40,.18)}
+.frame .inner{transform-origin:top left;position:absolute;top:0;left:0}
+#dots{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+#dots button{width:10px;height:10px;min-height:0!important;padding:0;border-radius:50%;background:var(--line);border:0;position:relative;transition:all .15s}
+#dots button::after{content:"";position:absolute;inset:-10px}
+#dots button.on{background:var(--pri);width:26px;border-radius:5px}
+.nav{display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px;color:var(--mut);font-weight:600}
+.nav button{border-radius:999px;padding:6px 16px}
+#msg{margin-top:10px;color:var(--mut);min-height:18px;white-space:pre-wrap;font-size:13px;text-align:center}
+.hint{font-size:12px;color:var(--mut);margin-top:6px}
+.hidden{display:none}
+#help details{border-top:1px solid var(--line);padding:8px 0}
+#help summary{cursor:pointer;font-weight:600}
+#help ul,#help ol{margin:8px 0 0;padding-left:20px;color:var(--mut)}
+#help li{margin-bottom:4px}
+#help code{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:12px}
+#offscreen{position:fixed;left:-99999px;top:0}
+input[type=range]{accent-color:var(--pri);padding:0;min-height:0!important;height:24px;background:transparent;border:0}
+input[type=range]:focus{box-shadow:none}
+input[type=file]{padding:6px;font-size:13px;color:var(--mut)}
+input[type=file]::file-selector-button{background:var(--soft);color:var(--pri);border:1px solid var(--pri);border-radius:8px;padding:6px 12px;margin-right:10px;font:inherit;font-weight:600;cursor:pointer}
+input[type=color]{cursor:pointer}
+#detect{background:var(--soft);color:var(--pri);border-color:var(--pri);font-weight:600}
+.hint{line-height:1.5}
+details.card>summary{cursor:pointer;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;
+  list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:28px}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::after{content:"▾";transition:transform .15s}
+details.card:not([open])>summary::after{transform:rotate(-90deg)}
+details.card[open]>summary{margin-bottom:10px}
+.slide{padding:0;overflow:hidden}
+.slide .hd{margin:0;padding:10px 12px;cursor:pointer;gap:8px;min-height:46px}
+.slide .hd .t{flex:1;min-width:0;display:flex;gap:8px;align-items:center}
+.slide .hd .t b{flex:none;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:0 7px;font-size:12px}
+.slide .hd .t em{font-style:normal;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mut)}
+.slide.sel .hd .t em{color:var(--ink)}
+.slide .hd .chev{color:var(--mut);transition:transform .15s}.slide.collapsed .chev{transform:rotate(-90deg)}
+.slide .bd{padding:0 12px 12px}.slide.collapsed .bd{display:none}
+.slide .acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.slide .acts button{flex:1;padding:8px}
+.slide .acts .del{color:#d92d20}
+button.add{width:100%;border-style:dashed;padding:11px}
+#themes{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;margin-bottom:2px}
+#themes button{flex:none;min-height:0!important;padding:0;width:56px;height:56px;border-radius:12px;border:2px solid var(--line);
+  font-weight:800;font-size:18px;position:relative}
+#themes button span{position:absolute;left:0;right:0;bottom:-1px;font-size:9px;font-weight:600;background:rgba(0,0,0,.45);color:#fff;border-radius:0 0 10px 10px;padding:1px 0}
+.emo{margin-top:6px}
+.emorow{display:flex;gap:4px;overflow-x:auto;padding:4px 0 8px}
+.emorow button.em{flex:none;width:40px;height:40px;min-height:0!important;padding:0;font-size:22px;border-radius:10px;background:var(--card)}
+#tabs{display:none}
+@media(max-width:1000px){
+  body{padding-bottom:68px}
+  input,textarea,select,button{font-size:16px;min-height:44px}
+  input[type=file]{min-height:0}
+  input[type=checkbox]{min-height:0;width:20px;height:20px;vertical-align:middle}
+  main{padding:10px;display:block}
+  main>section{display:none}main>section.show{display:block}
+  #preview{position:static}
+  #tabs{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);z-index:10;
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:6px}
+  #tabs button{flex:1;font-size:13px;padding:6px 2px;min-height:48px;border-radius:10px;border-color:transparent;background:transparent}
+  #tabs button.on{background:var(--soft);border-color:var(--pri);color:var(--pri);font-weight:600}
+  #tabs button.pri{background:var(--pri);color:#fff}
+  #gen{width:100%}
+  .nav button{min-width:64px}
+}
+
+</style></head><body>
+<header>✨ Insta Slides <small>Runs fully in your browser · nothing is uploaded</small></header>
+<main>
+<section id="sec-edit">
+  <details class="card" open>
+    <summary>AI generate (optional)</summary>
+    <label>Your question</label>
+    <textarea id="q" placeholder="e.g. Why do we feel sleepy after lunch?"></textarea>
+    <div class="row">
+      <div><label>Slides</label><input id="n" type="number" min="3" max="10" value="6"></div>
+      <div><label>Tone</label><input id="tone" value="friendly and clear"></div>
+    </div>
+    <label>AI source</label>
+    <select id="provider">
+      <option value="local">Local model (Ollama / LM Studio)</option>
+      <option value="anthropic">Claude — my own API key</option>
+      <option value="gemini">Google Gemini — my own API key</option>
+      <option value="openai">OpenAI-compatible cloud — my own API key</option>
+      <option value="paste">No key: copy prompt → paste reply</option>
+    </select>
+
+    <div id="cfg-api">
+      <label>Base URL</label><input id="baseUrl">
+      <div id="keyRow"><label>API key (stored only in this browser)</label><input id="apiKey" type="password" autocomplete="off"></div>
+      <label>Model</label>
+      <div class="row"><input id="model" list="models"><button id="detect" title="List models from the server">Detect</button></div>
+      <datalist id="models"></datalist>
+      <div class="hint" id="provHint"></div>
+    </div>
+
+    <div id="cfg-paste" class="hidden">
+      <div class="hint">Works with the Gemini / ChatGPT / Claude mobile apps. 1) “Share to app…” (or “Copy prompt”) and send it in the app. 2) Copy the app’s reply, come back here and tap “Paste &amp; load”.</div>
+      <div class="row" style="margin-top:8px"><button id="copyPrompt">Copy prompt</button><button id="sharePrompt">Share to app…</button><button id="pasteReply">Paste &amp; load</button></div>
+      <label>Chatbot reply (JSON)</label><textarea id="reply"></textarea>
+    </div>
+
+    <div style="margin-top:10px"><button class="pri" id="aiBtn">AI Generate</button></div>
+  </details>
+  <details class="card" open>
+    <summary>Slides</summary>
+    <div id="slides"></div>
+    <button id="add" class="add">+ Add slide</button>
+  </details>
+  <details class="card">
+    <summary>Caption &amp; hashtags</summary>
+    <label>Caption</label><textarea id="caption"></textarea>
+    <label>Hashtags (space separated)</label><textarea id="tags"></textarea>
+  </details>
+  <details class="card" id="help">
+    <summary>Help &amp; things to know</summary>
+    <details open><summary>Quick start</summary>
+      <ol>
+        <li>Type a question and click <b>AI Generate</b> — or just edit the slides yourself (no AI needed).</li>
+        <li>Edit text, caption and hashtags. Style it on the right; the preview updates live.</li>
+        <li>Click <b>Generate &amp; download zip</b> → PNG slides + <code>caption.txt</code>.</li>
+        <li>Upload the PNGs to Instagram as a carousel and paste the caption.</li>
+      </ol>
+    </details>
+    <details><summary>Choosing an AI source</summary>
+      <ul>
+        <li><b>Local model</b>: free and private. Needs Ollama or LM Studio running on your computer.</li>
+        <li><b>Own API key</b>: Claude or any OpenAI-compatible service. You pay your provider per use.</li>
+        <li><b>Copy prompt → paste reply</b>: no key, no setup. Use any chatbot yourself.</li>
+      </ul>
+    </details>
+    <details><summary>Local model setup (Ollama / LM Studio)</summary>
+      <ul>
+        <li>Ollama: base URL <code>http://localhost:11434/v1</code>. Start it with the environment variable
+          <code>OLLAMA_ORIGINS=*</code> (then restart Ollama), otherwise the browser blocks the request.</li>
+        <li>LM Studio: base URL <code>http://localhost:1234/v1</code>. Start the server and turn on <b>Enable CORS</b>.</li>
+        <li>Click <b>Detect</b> to list your installed models, then pick one.</li>
+        <li>Small models sometimes return broken JSON. Retry, use a bigger model, or use copy-paste mode.</li>
+      </ul>
+    </details>
+    <details><summary>Privacy &amp; API keys</summary>
+      <ul>
+        <li>Everything runs in your browser; there is no server of ours. Your questions go only to the AI source you choose.</li>
+        <li>Your key is saved in this browser only (localStorage) and sent only to the base URL shown.
+          Don’t enter a key on a shared or public computer; clear it when done.</li>
+        <li>Browser-side keys can be read by anyone with access to this browser, so use a key with a spending limit.</li>
+      </ul>
+    </details>
+    <details><summary>Tips for good slides</summary>
+      <ul>
+        <li>Keep each slide to one idea: title under 8 words, body under 30 words.</li>
+        <li>Slide 1 is the hook; the last slide should ask people to save, share or follow.</li>
+        <li>Use <b>Portrait 1080×1350</b> for the most feed space. Long text shrinks automatically to fit.</li>
+        <li>On photo backgrounds, raise <b>Image darkness</b> so the text stays readable.</li>
+        <li>Hindi or other scripts: pick a matching font, e.g. <i>Noto Sans Devanagari</i>.</li>
+      </ul>
+    </details>
+    <details><summary>Troubleshooting</summary>
+      <ul>
+        <li><b>“Could not reach the server”</b>: the local model isn’t running, the URL is wrong, or CORS isn’t enabled (see above).</li>
+        <li><b>Font looks different / not loading</b>: fonts come from Google Fonts and need internet. Check the font name spelling.</li>
+        <li><b>Export shows an error</b>: a background image from another website can be blocked; upload the image file instead.</li>
+        <li><b>Nothing happens on AI Generate</b>: check that a model is chosen and your question isn’t empty.</li>
+        <li>Images are saved to your browser’s downloads folder as <code>instagram_post.zip</code>.</li>
+      </ul>
+    </details>
+  </details>
+</section>
+
+<section id="preview">
+  <div class="card">
+    <h3>Preview</h3>
+    <div class="frame" id="frame"><div class="inner" id="inner"></div></div>
+    <div id="dots"></div>
+    <div class="nav"><button id="prev">&larr;</button><span id="pos"></span><button id="next">&rarr;</button></div>
+    <div style="margin-top:12px"><button class="pri" id="gen">Generate &amp; download zip</button></div>
+    <div style="margin-top:8px"><button id="share" class="sharebtn">📤 Share to Instagram…</button></div>
+    <div id="msg"></div>
+  </div>
+</section>
+
+<section id="sec-style">
+  <details class="card" id="stylecard" open>
+    <summary>Style</summary>
+    <label>Quick themes</label><div id="themes"></div>
+    <label>Format</label>
+    <select id="size"><option value="portrait">Portrait 1080×1350</option>
+      <option value="square">Square 1080×1080</option><option value="story">Story 1080×1920</option></select>
+    <label>Background</label>
+    <select id="bg_type"><option value="gradient">Gradient</option><option value="solid">Solid</option>
+      <option value="image">Image</option></select>
+    <div class="row"><div><label>Color 1</label><input type="color" id="bg_color" value="#0f172a"></div>
+      <div><label>Color 2</label><input type="color" id="bg_color2" value="#6d28d9"></div></div>
+    <label>Gradient angle</label><input type="range" id="gradient_angle" min="0" max="360" value="135">
+    <label>Background image (all slides)</label><input type="file" id="bgfile" accept="image/*">
+    <label>Image darkness</label><input type="range" id="overlay" min="0" max="0.9" step="0.05" value="0.45">
+    <div class="row"><div><label>Text</label><input type="color" id="text_color" value="#ffffff"></div>
+      <div><label>Accent</label><input type="color" id="accent_color" value="#facc15"></div></div>
+    <label>Font (any Google Font)</label>
+    <input id="font" list="fonts" value="Poppins">
+    <datalist id="fonts"><option>Poppins</option><option>Montserrat</option><option>Playfair Display</option>
+      <option>Bebas Neue</option><option>Lora</option><option>Oswald</option><option>Inter</option>
+      <option>Noto Sans Devanagari</option><option>Pacifico</option></datalist>
+    <div class="row"><div><label>Title size</label><input type="number" id="title_size" value="84"></div>
+      <div><label>Body size</label><input type="number" id="body_size" value="46"></div></div>
+    <div class="row"><div><label>Align</label><select id="align"><option>left</option><option>center</option></select></div>
+      <div><label>Layout</label><select id="layout"><option>standard</option><option>quote</option><option>bold</option></select></div></div>
+    <label>@handle</label><input id="handle" placeholder="@yourname">
+    <label><input type="checkbox" id="show_numbers" checked> Slide numbers</label>
+    <label><input type="checkbox" id="show_dots" checked> Progress dots on slides</label>
+    <label><input type="checkbox" id="show_swipe" checked> Show “swipe →” hint</label>
+  </details>
+</section>
+</main>
+<nav id="tabs">
+  <button data-tab="sec-edit" class="on">✎ Edit</button>
+  <button data-tab="preview">👁 Preview</button>
+  <button data-tab="sec-style">🎨 Style</button>
+  <button data-tab="gen2" class="pri">⬇ Export</button>
+</nav>
+<div id="offscreen"></div>
+
+<script src="vendor/html-to-image.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="app.js"></script>
+</body></html>
