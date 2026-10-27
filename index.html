@@ -57,6 +57,11 @@ input[type=file]::file-selector-button{background:var(--soft);color:var(--pri);b
 input[type=color]{cursor:pointer}
 #detect{background:var(--soft);color:var(--pri);border-color:var(--pri);font-weight:600}
 .hint{line-height:1.5}
+#preflight{margin-top:10px;padding:12px;border:1px solid #f59e0b;border-radius:10px;background:var(--soft);color:var(--ink)}
+#preflight h4{margin:0 0 6px;font-size:13px}
+#preflight ul{margin:0;padding-left:20px}
+#preflight li{margin:4px 0}
+#preflight .row{margin-top:10px}
 details.card>summary{cursor:pointer;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;
   list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:28px}
 details.card>summary::-webkit-details-marker{display:none}
@@ -140,6 +145,11 @@ button.add{width:100%;border-style:dashed;padding:11px}
   </details>
   <details class="card" open>
     <summary>Slides</summary>
+    <div class="row" style="margin-bottom:10px">
+      <button id="saveProject" type="button">Save project</button>
+      <button id="loadProject" type="button">Open project</button>
+      <input id="projectFile" type="file" accept=".instaslides.json,.json,application/json" hidden>
+    </div>
     <div id="slides"></div>
     <button id="add" class="add">+ Add slide</button>
   </details>
@@ -154,7 +164,8 @@ button.add{width:100%;border-style:dashed;padding:11px}
       <ol>
         <li>Type a question and click <b>AI Generate</b> — or just edit the slides yourself (no AI needed).</li>
         <li>Edit text, caption and hashtags. Style it on the right; the preview updates live.</li>
-        <li>Click <b>Generate &amp; download zip</b> → PNG slides + <code>caption.txt</code>.</li>
+        <li>Use <b>Save project</b> to download a portable project file (including uploaded backgrounds); <b>Open project</b> restores it in this browser.</li>
+        <li>Click <b>Generate &amp; download zip</b> → PNG slides + <code>caption.txt</code>. A local readability/content check runs first.</li>
         <li>Upload the PNGs to Instagram as a carousel and paste the caption.</li>
       </ol>
     </details>
@@ -177,6 +188,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
     <details><summary>Privacy &amp; API keys</summary>
       <ul>
         <li>Everything runs in your browser; there is no server of ours. Your questions go only to the AI source you choose.</li>
+        <li>Project files and export checks are handled locally in this browser; no project data is uploaded.</li>
         <li>Your key is saved in this browser only (localStorage) and sent only to the base URL shown.
           Don’t enter a key on a shared or public computer; clear it when done.</li>
         <li>Browser-side keys can be read by anyone with access to this browser, so use a key with a spending limit.</li>
@@ -211,6 +223,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
     <div class="nav"><button id="prev">&larr;</button><span id="pos"></span><button id="next">&rarr;</button></div>
     <div style="margin-top:12px"><button class="pri" id="gen">Generate &amp; download zip</button></div>
     <div style="margin-top:8px"><button id="share" class="sharebtn">📤 Share to Instagram…</button></div>
+    <div id="preflight" role="alert" hidden></div>
     <div id="msg"></div>
   </div>
 </section>

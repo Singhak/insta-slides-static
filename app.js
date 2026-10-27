@@ -243,6 +243,145 @@ $("add").onclick = () => { slides.push({title: "", body: ""}); sel = openIdx = s
 $("prev").onclick = () => { sel = openIdx = Math.max(0, sel - 1); renderList(); preview(); };
 $("next").onclick = () => { sel = openIdx = Math.min(slides.length - 1, sel + 1); renderList(); preview(); };
 
+/* ---------- portable project files ---------- */
+function projectData() {
+  const style = {};
+  for (const id of styleIds) {
+    const e = $(id);
+    style[id] = e.type === "checkbox" ? e.checked : e.value;
+  }
+  return {
+    format: "insta-slides-project",
+    version: 1,
+    slides,
+    style,
+    bgImage,
+    caption: $("caption").value,
+    tags: $("tags").value,
+    question: $("q").value,
+  };
+}
+
+function isImageDataUrl(value) {
+  return value == null || value === "" ||
+    (typeof value === "string" && /^data:image\/[A-Za-z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$/.test(value));
+}
+
+function parseProject(data) {
+  if (!data || data.format !== "insta-slides-project" || data.version !== 1)
+    throw new Error("This isn't a supported Insta Slides project file.");
+  if (!Array.isArray(data.slides) || data.slides.length < 1 || data.slides.length > 50)
+    throw new Error("A project must contain between 1 and 50 slides.");
+  if (!data.style || typeof data.style !== "object" || Array.isArray(data.style))
+    throw new Error("The project is missing its style settings.");
+
+  const importedSlides = data.slides.map((slide, i) => {
+    if (!slide || typeof slide !== "object" || Array.isArray(slide))
+      throw new Error(`Slide ${i + 1} is invalid.`);
+    for (const field of ["title", "body"]) {
+      if (slide[field] != null && typeof slide[field] !== "string")
+        throw new Error(`Slide ${i + 1} has invalid ${field} text.`);
+      if ((slide[field] || "").length > 10000)
+        throw new Error(`Slide ${i + 1} ${field} text is too long.`);
+    }
+    if (!isImageDataUrl(slide.bg_image)) throw new Error(`Slide ${i + 1} has an invalid background image.`);
+    return {
+      title: slide.title || "",
+      body: slide.body || "",
+      sticker: typeof slide.sticker === "string" ? slide.sticker.slice(0, 8) : "",
+      stickerPos: ["tr", "tl", "br", "bl", "c", "none"].includes(slide.stickerPos) ? slide.stickerPos : "tr",
+      stickerSize: ["s", "m", "l"].includes(slide.stickerSize) ? slide.stickerSize : "m",
+      ...(slide.bg_image ? {bg_image: slide.bg_image} : {}),
+    };
+  });
+  if (!isImageDataUrl(data.bgImage)) throw new Error("The project has an invalid background image.");
+
+  const importedStyle = {};
+  for (const id of styleIds) {
+    if (!(id in data.style)) continue;
+    const e = $(id), value = data.style[id];
+    if (e.type === "checkbox") {
+      if (typeof value !== "boolean") throw new Error(`The "${id}" setting is invalid.`);
+      importedStyle[id] = value;
+    } else if (e.type === "number" || e.type === "range") {
+      const number = Number(value);
+      const min = e.min === "" ? -Infinity : Number(e.min);
+      const max = e.max === "" ? Infinity : Number(e.max);
+      if (!Number.isFinite(number) || number < min || number > max)
+        throw new Error(`The "${id}" setting is outside its allowed range.`);
+      importedStyle[id] = String(number);
+    } else if (typeof value === "string" && value.length <= 100) {
+      if (e.tagName === "SELECT" && ![...e.options].some(option => option.value === value))
+        throw new Error(`The "${id}" setting is not supported.`);
+      if (e.type === "color" && !/^#[\da-f]{6}$/i.test(value))
+        throw new Error(`The "${id}" color is invalid.`);
+      importedStyle[id] = value;
+    } else {
+      throw new Error(`The "${id}" setting is invalid.`);
+    }
+  }
+  for (const field of ["caption", "tags", "question"]) {
+    if (data[field] != null && typeof data[field] !== "string")
+      throw new Error(`The project ${field} is invalid.`);
+  }
+  return {
+    slides: importedSlides,
+    style: importedStyle,
+    bgImage: data.bgImage || null,
+    caption: data.caption || "",
+    tags: data.tags || "",
+    question: data.question || "",
+  };
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+$("saveProject").onclick = () => {
+  const blob = new Blob([JSON.stringify(projectData(), null, 2)], {type: "application/json"});
+  if (blob.size > 50 * 1024 * 1024) {
+    $("msg").textContent = "Project is too large to save (maximum 50 MB). Try smaller background images.";
+    return;
+  }
+  downloadBlob(blob, "instagram-carousel.instaslides.json");
+  $("msg").textContent = "Project saved, including its slide text and uploaded backgrounds.";
+};
+$("loadProject").onclick = () => $("projectFile").click();
+$("projectFile").onchange = async e => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  if (file.size > 50 * 1024 * 1024) {
+    $("msg").textContent = "Project file is too large (maximum 50 MB).";
+    return;
+  }
+  try {
+    const project = parseProject(JSON.parse(await file.text()));
+    slides = project.slides;
+    bgImage = project.bgImage;
+    for (const [id, value] of Object.entries(project.style)) {
+      const e = $(id);
+      if (e.type === "checkbox") e.checked = value;
+      else e.value = value;
+    }
+    $("caption").value = project.caption;
+    $("tags").value = project.tags;
+    $("q").value = project.question;
+    sel = openIdx = 0;
+    renderList();
+    preview();
+    $("msg").textContent = `Opened ${file.name}.`;
+  } catch (error) {
+    $("msg").textContent = "Could not open project: " + error.message;
+  }
+};
+
 /* ---------- export: PNGs + caption.txt -> zip ---------- */
 function captionText() {
   const tags = $("tags").value.split(/\s+/).filter(Boolean).map(x => x.startsWith("#") ? x : "#" + x).join(" ");
@@ -274,20 +413,77 @@ async function busy(btn, fn) {
   $("gen").disabled = $("share").disabled = false;
 }
 
-$("gen").onclick = () => busy($("gen"), async () => {
+function preflightWarnings() {
+  const warnings = [];
+  slides.forEach((slide, i) => {
+    const title = (slide.title || "").trim(), body = (slide.body || "").trim();
+    const titleWords = title ? title.split(/\s+/).length : 0;
+    const bodyWords = body ? body.split(/\s+/).length : 0;
+    if (!title && !body) warnings.push(`Slide ${i + 1} is empty.`);
+    if (titleWords > 8) warnings.push(`Slide ${i + 1} title has ${titleWords} words; consider keeping it under 9.`);
+    if (bodyWords > 30) warnings.push(`Slide ${i + 1} body has ${bodyWords} words; consider keeping it under 31.`);
+  });
+  if (Number($("title_size").value) < 42 || Number($("body_size").value) < 24)
+    warnings.push("One or more text sizes are unusually small and may be hard to read.");
+  if ($("bg_type").value === "image" && Number($("overlay").value) < 0.25)
+    warnings.push("The background image has a light overlay; text may be difficult to read.");
+  if (!$("caption").value.trim() && !$("tags").value.trim()) warnings.push("The caption and hashtags are empty.");
+  return warnings;
+}
+
+function reviewBeforeExport(btn, action) {
+  const panel = $("preflight"), warnings = preflightWarnings();
+  panel.replaceChildren();
+  if (!warnings.length) {
+    panel.hidden = true;
+    busy(btn, action);
+    return;
+  }
+  const heading = document.createElement("h4");
+  heading.textContent = "Review before exporting";
+  const list = document.createElement("ul");
+  for (const warning of warnings) {
+    const item = document.createElement("li");
+    item.textContent = warning;
+    list.appendChild(item);
+  }
+  const buttons = document.createElement("div");
+  buttons.className = "row";
+  const proceed = document.createElement("button");
+  proceed.type = "button";
+  proceed.textContent = "Continue anyway";
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.textContent = "Cancel";
+  proceed.onclick = () => {
+    panel.hidden = true;
+    $("gen").disabled = $("share").disabled = false;
+    busy(btn, action);
+  };
+  cancel.onclick = () => {
+    panel.hidden = true;
+    $("gen").disabled = $("share").disabled = false;
+    $("msg").textContent = "Export canceled.";
+  };
+  buttons.append(proceed, cancel);
+  panel.append(heading, list, buttons);
+  panel.hidden = false;
+  $("gen").disabled = $("share").disabled = true;
+  $("msg").textContent = "Check the notes below. You can fix them or continue.";
+  panel.scrollIntoView({block: "nearest", behavior: "smooth"});
+}
+
+$("gen").onclick = () => reviewBeforeExport($("gen"), async () => {
   const zip = new JSZip();
   for (const f of await renderAll()) zip.file(f.name, f.b64, {base64: true});
   zip.file("caption.txt", captionText());
   const blob = await zip.generateAsync({type: "blob"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "instagram_post.zip";
-  a.click();
+  downloadBlob(blob, "instagram_post.zip");
   $("msg").textContent = "Done — zip downloaded.";
 });
 
 // Phone share sheet: pick Instagram and the slides arrive as a carousel (caption is copied to the clipboard).
-$("share").onclick = () => busy($("share"), async () => {
+$("share").onclick = () => reviewBeforeExport($("share"), async () => {
   const files = (await renderAll()).map(f => new File([b64ToBlob(f.b64)], f.name, {type: "image/png"}));
   if (!navigator.canShare || !navigator.canShare({files})) {
     $("msg").textContent = "This browser can't share images. Use “Generate & download zip” instead.";

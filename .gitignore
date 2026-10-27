@@ -1,0 +1,10 @@
+# OS-generated files
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+
+# Editor temporary and backup files
+*.swp
+*.swo
+*~
