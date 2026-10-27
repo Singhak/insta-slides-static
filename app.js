@@ -167,7 +167,7 @@ $("frame").addEventListener("touchend", e => {
 const toData = f => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(f); });
 
 const EMOJIS = ["🔥","✨","💡","🚀","🎯","✅","❌","⚡","💪","🧠","❤️","😍","😂","🤯","👀","🙌","👉","👇","⬆️","📌","⭐","🏆","💰","📈","⏰","🎉","🌟","💎","🔑","📚","🌱","☀️","🌙","🍕","☕","🎧","📱","💻","🇮🇳","🙏"];
-let openIdx = 0;
+let openIdx = 0, deleteUndoTimer, deletedSlide;
 function renderList() {
   $("slides").innerHTML = "";
   slides.forEach((s, i) => {
@@ -222,7 +222,17 @@ function renderList() {
     d.querySelectorAll("button[data-a]").forEach(b => b.onclick = ev => {
       ev.stopPropagation();
       const a = b.dataset.a;
-      if (a === "del" && slides.length > 1) { slides.splice(i, 1); sel = Math.min(i, slides.length - 1); }
+      if (a === "del" && slides.length > 1) {
+        deletedSlide = {slide: s, index: i};
+        clearTimeout(deleteUndoTimer);
+        $("deleteUndo").hidden = false;
+        slides.splice(i, 1);
+        sel = Math.min(i, slides.length - 1);
+        deleteUndoTimer = setTimeout(() => {
+          deletedSlide = null;
+          $("deleteUndo").hidden = true;
+        }, 8000);
+      }
       if (a === "up" && i > 0) { [slides[i - 1], slides[i]] = [slides[i], slides[i - 1]]; sel = i - 1; }
       if (a === "down" && i < slides.length - 1) { [slides[i + 1], slides[i]] = [slides[i], slides[i + 1]]; sel = i + 1; }
       if (a === "dup") { slides.splice(i + 1, 0, {...s}); sel = i + 1; }
@@ -230,6 +240,25 @@ function renderList() {
     });
     $("slides").appendChild(d);
   });
+}
+
+$("undoDelete").onclick = () => {
+  if (!deletedSlide) return;
+  slides.splice(deletedSlide.index, 0, deletedSlide.slide);
+  sel = openIdx = deletedSlide.index;
+  deletedSlide = null;
+  clearTimeout(deleteUndoTimer);
+  $("deleteUndo").hidden = true;
+  renderList();
+  preview();
+  $("msg").textContent = "Slide restored.";
+};
+
+function clearDeletedSlideUndo() {
+  clearTimeout(deleteUndoTimer);
+  deleteUndoTimer = null;
+  deletedSlide = null;
+  $("deleteUndo").hidden = true;
 }
 
 styleIds.forEach(id => $(id).addEventListener("input", preview));
@@ -363,6 +392,7 @@ $("projectFile").onchange = async e => {
   }
   try {
     const project = parseProject(JSON.parse(await file.text()));
+    clearDeletedSlideUndo();
     slides = project.slides;
     bgImage = project.bgImage;
     for (const [id, value] of Object.entries(project.style)) {
@@ -644,6 +674,7 @@ function parseDeck(text) {
 }
 
 function applyDeck(d) {
+  clearDeletedSlideUndo();
   slides = d.slides.map(s => ({title: s.title || "", body: s.body || ""}));
   $("caption").value = d.caption || "";
   $("tags").value = (d.hashtags || []).join(" ");

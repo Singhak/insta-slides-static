@@ -7,11 +7,26 @@
 @media(prefers-color-scheme:dark){:root{--bg:#0e1013;--card:#171a1f;--ink:#eef0f3;--mut:#98a2b3;--line:#2a2f37;--soft:#1e1a2e;--sh:0 1px 2px rgba(0,0,0,.4)}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,sans-serif}
-header{padding:14px 20px;background:linear-gradient(120deg,var(--pri),var(--pri2));color:#fff;font-weight:700;font-size:17px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-header small{font-weight:400;font-size:12px;opacity:.85;margin-left:auto}
+header{position:relative;overflow:hidden;padding:18px 24px;background:linear-gradient(115deg,#312e81 0%,#6d28d9 52%,#be185d 100%);color:#fff}
+header::after{content:"";position:absolute;width:280px;height:280px;right:8%;top:-220px;border:1px solid rgba(255,255,255,.16);border-radius:50%;box-shadow:0 0 0 32px rgba(255,255,255,.04),0 0 0 64px rgba(255,255,255,.035);pointer-events:none}
+.header-inner{position:relative;z-index:1;max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand-mark{width:44px;height:44px;display:grid;place-items:center;flex:none;border:1px solid rgba(255,255,255,.32);border-radius:14px;background:rgba(255,255,255,.16);box-shadow:inset 0 1px rgba(255,255,255,.22);font-size:23px}
+.brand h1{margin:0;font-size:21px;line-height:1.2;letter-spacing:-.025em}
+.brand p{margin:3px 0 0;font-size:12px;font-weight:400;color:rgba(255,255,255,.82)}
+.privacy-badge{display:flex;align-items:center;gap:8px;flex:none;padding:8px 12px;border:1px solid rgba(255,255,255,.23);border-radius:999px;background:rgba(255,255,255,.12);font-size:12px;font-weight:500;color:rgba(255,255,255,.94)}
+.privacy-badge span{width:7px;height:7px;border-radius:50%;background:#86efac;box-shadow:0 0 10px rgba(134,239,172,.75)}
 main{display:grid;grid-template-columns:minmax(300px,1fr) minmax(300px,1fr) 300px;gap:16px;padding:16px;align-items:start}
 @media(max-width:1000px){main{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:var(--sh)}
+.project-tools{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.project-tools>div:first-child{display:flex;flex-direction:column}
+.project-tools small{color:var(--mut);font-size:12px}
+.project-tools .row{flex:none}
+.project-tools .row button{min-width:110px}
+#deleteUndo{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;margin:0 0 10px;border:1px solid var(--line);border-radius:10px;background:var(--soft)}
+#deleteUndo[hidden]{display:none}
+#deleteUndo button{width:auto;padding:5px 12px;color:var(--pri);font-weight:600}
 h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
 label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
 input,textarea,select,button{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);
@@ -103,14 +118,40 @@ button.add{width:100%;border-style:dashed;padding:11px}
   #tabs button.pri{background:var(--pri);color:#fff}
   #gen{width:100%}
   .nav button{min-width:64px}
+  .project-tools{align-items:flex-start;flex-direction:column}
+  .project-tools .row{width:100%}
+  .project-tools .row button{flex:1}
+}
+@media(max-width:560px){
+  header{padding:14px 16px}
+  .header-inner{align-items:flex-start;flex-direction:column;gap:10px}
+  .brand-mark{width:40px;height:40px;border-radius:13px;font-size:21px}
+  .brand h1{font-size:19px}
+  .privacy-badge{margin-left:52px;padding:6px 10px;font-size:11px}
 }
 
 </style></head><body>
-<header>✨ Insta Slides <small>Runs fully in your browser · nothing is uploaded</small></header>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">✨</span>
+      <div><h1>Insta Slides</h1><p>Make your next idea swipe-worthy.</p></div>
+    </div>
+    <div class="privacy-badge"><span aria-hidden="true"></span>Private by design · Runs in your browser</div>
+  </div>
+</header>
 <main>
 <section id="sec-edit">
-  <details class="card" open>
-    <summary>AI generate (optional)</summary>
+  <div class="project-tools card" aria-label="Project files">
+    <div><strong>Project</strong><small>Save a portable copy or open one</small></div>
+    <div class="row">
+      <button id="saveProject" type="button">Save project</button>
+      <button id="loadProject" type="button">Open project</button>
+      <input id="projectFile" type="file" accept=".instaslides.json,.json,application/json" hidden>
+    </div>
+  </div>
+  <details class="card">
+    <summary>Create slides with AI (optional)</summary>
     <label>Your question</label>
     <textarea id="q" placeholder="e.g. Why do we feel sleepy after lunch?"></textarea>
     <div class="row">
@@ -145,10 +186,8 @@ button.add{width:100%;border-style:dashed;padding:11px}
   </details>
   <details class="card" open>
     <summary>Slides</summary>
-    <div class="row" style="margin-bottom:10px">
-      <button id="saveProject" type="button">Save project</button>
-      <button id="loadProject" type="button">Open project</button>
-      <input id="projectFile" type="file" accept=".instaslides.json,.json,application/json" hidden>
+    <div id="deleteUndo" role="status" aria-live="polite" hidden>
+      <span>Slide deleted.</span><button id="undoDelete" type="button">Undo</button>
     </div>
     <div id="slides"></div>
     <button id="add" class="add">+ Add slide</button>
@@ -162,7 +201,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
     <summary>Help &amp; things to know</summary>
     <details open><summary>Quick start</summary>
       <ol>
-        <li>Type a question and click <b>AI Generate</b> — or just edit the slides yourself (no AI needed).</li>
+        <li>Edit slides directly, or expand <b>Create slides with AI</b> to generate a draft (AI is optional).</li>
         <li>Edit text, caption and hashtags. Style it on the right; the preview updates live.</li>
         <li>Use <b>Save project</b> to download a portable project file (including uploaded backgrounds); <b>Open project</b> restores it in this browser.</li>
         <li>Click <b>Generate &amp; download zip</b> → PNG slides + <code>caption.txt</code>. A local readability/content check runs first.</li>
