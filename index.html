@@ -83,6 +83,13 @@ button:disabled{opacity:.5;cursor:wait}
 .nav button{border-radius:999px;padding:6px 16px}
 #msg{margin-top:10px;color:var(--mut);min-height:18px;white-space:pre-wrap;font-size:13px;text-align:center}
 .hint{font-size:12px;color:var(--mut);margin-top:6px}
+.label-with-help{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 3px}
+.label-with-help label{margin:0}
+.help-link{width:22px;height:22px;flex:none;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--soft);color:var(--pri);font-size:13px;font-weight:700;line-height:20px;text-align:center}
+.help-link:hover{background:var(--pri);color:#fff}
+.help-link:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+.action-with-help{display:flex;align-items:center;gap:8px;margin-top:12px}
+.action-with-help #gen{flex:1}
 .hidden{display:none}
 #help details{border-top:1px solid var(--line);padding:8px 0}
 #help summary{cursor:pointer;font-weight:600}
@@ -179,7 +186,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
       <input id="projectFile" type="file" accept=".instaslides.json,.json,application/json" hidden>
     </div>
   </div>
-  <details class="card">
+  <details class="card" id="aiPanel">
     <summary>Create slides with AI (optional)</summary>
     <label>Your question</label>
     <textarea id="q" placeholder="e.g. Why do we feel sleepy after lunch?"></textarea>
@@ -187,7 +194,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
       <div><label>Slides</label><input id="n" type="number" min="3" max="10" value="6"></div>
       <div><label>Tone</label><input id="tone" value="friendly and clear"></div>
     </div>
-    <label>AI source</label>
+    <div class="label-with-help"><label for="provider">AI source</label><button class="help-link" type="button" data-help-target="help-ai-source" aria-label="Help choosing an AI source" title="Help: choosing an AI source">?</button></div>
     <select id="provider">
       <option value="local">Local model (Ollama / LM Studio)</option>
       <option value="anthropic">Claude — my own API key</option>
@@ -197,7 +204,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
     </select>
 
     <div id="cfg-api">
-      <label>Base URL</label><input id="baseUrl">
+      <div class="label-with-help"><label for="baseUrl">Base URL</label><button class="help-link" type="button" data-help-target="help-local" aria-label="Help setting up a local model" title="Help: local model setup">?</button></div><input id="baseUrl">
       <div id="keyRow"><label>API key (stored only in this browser)</label><input id="apiKey" type="password" autocomplete="off"></div>
       <label>Model</label>
       <div class="row"><input id="model" list="models"><button id="detect" title="List models from the server">Detect</button></div>
@@ -206,9 +213,16 @@ button.add{width:100%;border-style:dashed;padding:11px}
     </div>
 
     <div id="cfg-paste" class="hidden">
-      <div class="hint">Works with the Gemini / ChatGPT / Claude mobile apps. 1) “Share to app…” (or “Copy prompt”) and send it in the app. 2) Copy the app’s reply, come back here and tap “Paste &amp; load”.</div>
+      <ol class="paste-steps">
+        <li>Write your question above and choose the number of slides.</li>
+        <li>Tap <b>Copy prompt</b>, then open a chatbot such as ChatGPT, Gemini, or Claude and paste/send the prompt. <b>Share to app…</b> is an optional shortcut on supported devices.</li>
+        <li>Copy the chatbot’s complete reply, return here, and either tap <b>Paste &amp; load</b> or paste it into the box below.</li>
+        <li>If you pasted the reply into the box, tap <b>Load reply</b>. Your generated slides will appear for editing.</li>
+      </ol>
+      <div class="hint">No API key is needed. Nothing is sent automatically: you choose which chatbot to use and manually send it the copied prompt.</div>
       <div class="row" style="margin-top:8px"><button id="copyPrompt">Copy prompt</button><button id="sharePrompt">Share to app…</button><button id="pasteReply">Paste &amp; load</button></div>
-      <label>Chatbot reply (JSON)</label><textarea id="reply"></textarea>
+      <label for="reply">Chatbot reply</label><textarea id="reply" placeholder="Paste the chatbot's complete reply here, then tap Load reply."></textarea>
+      <div class="hint">If loading fails, ask the chatbot: “Return only the JSON, with no introduction or code fences.”</div>
     </div>
 
     <div style="margin-top:10px"><button class="pri" id="aiBtn">AI Generate</button></div>
@@ -228,7 +242,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
   </details>
   <details class="card" id="help">
     <summary>Help &amp; things to know</summary>
-    <details open><summary>Quick start</summary>
+    <details open id="help-quickstart"><summary>Quick start</summary>
       <ol>
         <li>Edit slides directly, or expand <b>Create slides with AI</b> to generate a draft (AI is optional).</li>
         <li>Edit text, caption and hashtags. Style it on the right; the preview updates live.</li>
@@ -237,23 +251,27 @@ button.add{width:100%;border-style:dashed;padding:11px}
         <li>Upload the PNGs to Instagram as a carousel and paste the caption.</li>
       </ol>
     </details>
-    <details><summary>Choosing an AI source</summary>
+    <details id="help-ai-source"><summary>Choosing an AI source</summary>
       <ul>
         <li><b>Local model</b>: free and private. Needs Ollama or LM Studio running on your computer.</li>
         <li><b>Own API key</b>: Claude or any OpenAI-compatible service. You pay your provider per use.</li>
-        <li><b>Copy prompt → paste reply</b>: no key, no setup. Use any chatbot yourself.</li>
+        <li><b>Copy prompt → paste reply</b>: no key or setup. You manually send the copied prompt to a chatbot and paste its reply back here.</li>
       </ul>
     </details>
-    <details><summary>Local model setup (Ollama / LM Studio)</summary>
+    <details id="help-local"><summary>Local model setup (Ollama / LM Studio)</summary>
       <ul>
-        <li>Ollama: base URL <code>http://localhost:11434/v1</code>. Start it with the environment variable
-          <code>OLLAMA_ORIGINS=*</code> (then restart Ollama), otherwise the browser blocks the request.</li>
+        <li><b>Windows — Ollama:</b> fully quit Ollama from its notification-area/tray icon first. Open PowerShell and run
+          <code>$env:OLLAMA_ORIGINS="*"; ollama serve</code>. Leave that window open; this allows browser requests to Ollama.</li>
+        <li>Open a second PowerShell window and run <code>ollama run qwen2.5:1.5b</code>. Ollama downloads the model if needed; you can replace the model name with another chat model. Keep Ollama running while you use the app.</li>
+        <li>In this app, set the base URL to <code>http://localhost:11434/v1</code>, click <b>Detect</b>, choose the model, enter a question, then click <b>AI Generate</b>.</li>
+        <li><b>macOS / Linux:</b> quit Ollama, then start it from a terminal with <code>OLLAMA_ORIGINS="*" ollama serve</code>. In another terminal run <code>ollama run qwen2.5:1.5b</code>, then use the same base URL and Detect steps above.</li>
+        <li><code>*</code> allows browser pages to connect to your local Ollama server. Use this only on a trusted computer; do not expose Ollama to an untrusted network.</li>
         <li>LM Studio: base URL <code>http://localhost:1234/v1</code>. Start the server and turn on <b>Enable CORS</b>.</li>
-        <li>Click <b>Detect</b> to list your installed models, then pick one.</li>
+        <li>Expand <b>Create slides with AI</b> to automatically look for installed models. Click <b>Detect</b> to refresh the list.</li>
         <li>Small models sometimes return broken JSON. Retry, use a bigger model, or use copy-paste mode.</li>
       </ul>
     </details>
-    <details><summary>Privacy &amp; API keys</summary>
+    <details id="help-privacy"><summary>Privacy &amp; API keys</summary>
       <ul>
         <li>Everything runs in your browser; there is no server of ours. Your questions go only to the AI source you choose.</li>
         <li>Project files and export checks are handled locally in this browser; no project data is uploaded.</li>
@@ -262,7 +280,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
         <li>Browser-side keys can be read by anyone with access to this browser, so use a key with a spending limit.</li>
       </ul>
     </details>
-    <details><summary>Tips for good slides</summary>
+    <details id="help-tips"><summary>Tips for good slides</summary>
       <ul>
         <li>Keep each slide to one idea: title under 8 words, body under 30 words.</li>
         <li>Slide 1 is the hook; the last slide should ask people to save, share or follow.</li>
@@ -271,9 +289,9 @@ button.add{width:100%;border-style:dashed;padding:11px}
         <li>Hindi or other scripts: pick a matching font, e.g. <i>Noto Sans Devanagari</i>.</li>
       </ul>
     </details>
-    <details><summary>Troubleshooting</summary>
+    <details id="help-troubleshoot"><summary>Troubleshooting</summary>
       <ul>
-        <li><b>“Could not reach the server”</b>: the local model isn’t running, the URL is wrong, or CORS isn’t enabled (see above).</li>
+        <li><b>Model detection failed</b>: make sure Ollama is running, use <code>http://localhost:11434/v1</code>, and allow this page in Ollama’s CORS origins. After changing <code>OLLAMA_ORIGINS</code>, restart Ollama and click <b>Detect</b> again.</li>
         <li><b>Font looks different / not loading</b>: fonts come from Google Fonts and need internet. Check the font name spelling.</li>
         <li><b>Export shows an error</b>: a background image from another website can be blocked; upload the image file instead.</li>
         <li><b>Nothing happens on AI Generate</b>: check that a model is chosen and your question isn’t empty.</li>
@@ -289,7 +307,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
     <div class="frame" id="frame"><div class="inner" id="inner"></div></div>
     <div id="dots"></div>
     <div class="nav"><button id="prev">&larr;</button><span id="pos"></span><button id="next">&rarr;</button></div>
-    <div style="margin-top:12px"><button class="pri" id="gen">Generate &amp; download zip</button></div>
+    <div class="action-with-help"><button class="pri" id="gen">Generate &amp; download zip</button><button class="help-link" type="button" data-help-target="help-quickstart" aria-label="Help with saving and exporting" title="Help: quick start and exporting">?</button></div>
     <div style="margin-top:8px"><button id="share" class="sharebtn">📤 Share to Instagram…</button></div>
     <div id="preflight" role="alert" hidden></div>
     <div id="msg"></div>
@@ -299,7 +317,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
 <section id="sec-style">
   <details class="card" id="stylecard" open>
     <summary>Style</summary>
-    <label>Quick themes</label><div id="themes"></div>
+    <div class="label-with-help"><label>Quick themes</label><button class="help-link" type="button" data-help-target="help-tips" aria-label="Help with slide design" title="Help: slide design tips">?</button></div><div id="themes"></div>
     <label>Format</label>
     <select id="size"><option value="portrait">Portrait 1080×1350</option>
       <option value="square">Square 1080×1080</option><option value="story">Story 1080×1920</option></select>

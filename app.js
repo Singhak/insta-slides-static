@@ -527,8 +527,8 @@ $("share").onclick = () => reviewBeforeExport($("share"), async () => {
 /* ---------- AI providers ---------- */
 const PROVIDERS = {
   local: {url: "http://localhost:11434/v1", model: "", key: false,
-    hint: "Ollama: localhost:11434/v1 · LM Studio: localhost:1234/v1. Tap Detect to list models. " +
-      "Ollama needs OLLAMA_ORIGINS=* (then restart); LM Studio needs CORS enabled."},
+    hint: "Ollama: localhost:11434/v1 · LM Studio: localhost:1234/v1. Opening this panel searches for models; Detect refreshes the list. " +
+      "Ollama may need OLLAMA_ORIGINS configured and restarted; LM Studio needs CORS enabled."},
   anthropic: {url: "https://api.anthropic.com", model: "claude-sonnet-5-5", key: true,
     hint: "Your key is stored only in this browser (localStorage) and sent only to this URL."},
   gemini: {url: "https://generativelanguage.googleapis.com/v1beta/openai", model: "gemini-2.5-flash", key: true,
@@ -569,10 +569,29 @@ $("provider").onchange = () => { saveSettings(); applyProvider(); };
 ["baseUrl", "apiKey", "model"].forEach(id => $(id).addEventListener("change", saveSettings));
 applyProvider();
 
-$("detect").onclick = async () => {
+function openAIModelIds(json) {
+  if (!Array.isArray(json?.data)) throw new Error("The server returned an invalid model list.");
+  return json.data.filter(model => typeof model.id === "string")
+    .map(model => model.id).filter(id => !/embed|rerank/i.test(id));
+}
+
+function ollamaModelIds(json) {
+  if (!Array.isArray(json?.models)) throw new Error("Ollama returned an invalid model list.");
+  return json.models.filter(model => {
+    const capabilities = Array.isArray(model.capabilities) ? model.capabilities : [];
+    const id = model.name || model.model;
+    return typeof id === "string" &&
+      (capabilities.length ? capabilities.includes("completion") : !/embed|rerank/i.test(id));
+  }).map(model => model.name || model.model);
+}
+
+let autoDetectionAttempted = false;
+async function detectModels() {
+  const detectButton = $("detect");
+  detectButton.disabled = true;
   $("msg").textContent = "Looking for models…";
   try {
-    const base = $("baseUrl").value.replace(/\/$/, "");
+    const base = $("baseUrl").value.trim().replace(/\/+$/, "");
     const headers = $("provider").value === "anthropic"
       ? {"x-api-key": $("apiKey").value, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}
       : ($("apiKey").value ? {Authorization: "Bearer " + $("apiKey").value} : {});
@@ -584,14 +603,27 @@ $("detect").onclick = async () => {
     };
     let ids, loaded = [], root = base;
     if (isLocal) {
-      // Try the URL given, then the other common local server if it is not reachable.
-      const candidates = [base, "http://localhost:11434/v1", "http://localhost:1234/v1", "http://127.0.0.1:11434/v1", "http://127.0.0.1:1234/v1"]
+      const withV1 = url => url.replace(/\/+$/, "").replace(/\/v1$/, "") + "/v1";
+      const candidates = [withV1(base), "http://localhost:11434/v1", "http://localhost:1234/v1",
+        "http://127.0.0.1:11434/v1", "http://127.0.0.1:1234/v1"]
         .filter((u, i, a) => a.indexOf(u) === i);
-      let err;
+      let err, found = false;
       for (const c of candidates) {
-        try { ids = (await getJson(c + "/models")).data.map(m => m.id); root = c; break; } catch (e) { err ||= e; }
+        const origin = c.replace(/\/v1$/, "");
+        try {
+          ids = openAIModelIds(await getJson(c + "/models"));
+          root = c;
+          found = ids.length > 0;
+        } catch (e) { err = e; }
+        if (!found) {
+          try {
+            const ollamaIds = ollamaModelIds(await getJson(origin + "/api/tags"));
+            if (ollamaIds.length) { ids = ollamaIds; root = c; found = true; }
+          } catch (e) { err = e; }
+        }
+        if (found) break;
       }
-      if (!ids) throw err;
+      if (!found) throw err || new Error("No chat-capable models were found.");
       const origin = root.replace(/\/v1$/, "");
       // Ollama: models currently loaded in memory.
       try { loaded = (await getJson(origin + "/api/ps")).models.map(m => m.model || m.name); } catch {}
@@ -603,19 +635,33 @@ $("detect").onclick = async () => {
       loaded = loaded.filter(l => ids.includes(l));
       if (root !== base) $("baseUrl").value = root;
     } else {
-      ids = (await getJson($("provider").value === "anthropic" ? base + "/v1/models" : base + "/models")).data.map(m => m.id.replace(/^models\//, ""));
+      ids = openAIModelIds(await getJson($("provider").value === "anthropic" ? base + "/v1/models" : base + "/models"))
+        .map(id => id.replace(/^models\//, ""));
     }
-    const chat = ids.filter(i => !/embed|rerank/i.test(i));
-    const list = [...loaded, ...chat.filter(i => !loaded.includes(i))];
+    const active = loaded.filter(i => ids.includes(i));
+    const list = [...active, ...ids.filter(i => !active.includes(i))];
     $("models").innerHTML = list.map(i => `<option value="${i}">`).join("");
-    if (loaded.length) $("model").value = loaded[0];
+    if (active.length) $("model").value = active[0];
     else if (list.length && !list.includes($("model").value)) $("model").value = list[0];
     saveSettings();
-    $("msg").textContent = `Found ${list.length} model(s)` + (loaded.length ? `; running: ${loaded[0]}.` : ".");
+    $("msg").textContent = `Found ${list.length} model(s)` + (active.length ? `; running: ${active[0]}.` : ".");
   } catch (e) {
-    $("msg").textContent = "Could not reach the server: " + e.message + "\nIs it running, and is CORS allowed for this page?";
+    const localHint = $("provider").value === "local"
+      ? " Check that Ollama is running at http://localhost:11434, and allow this page in OLLAMA_ORIGINS."
+      : "";
+    $("msg").textContent = "Model detection failed: " + e.message + localHint;
+  } finally {
+    detectButton.disabled = false;
   }
-};
+}
+
+$("detect").onclick = detectModels;
+$("aiPanel").addEventListener("toggle", () => {
+  if ($("aiPanel").open && $("provider").value === "local" && !autoDetectionAttempted) {
+    autoDetectionAttempted = true;
+    detectModels();
+  }
+});
 
 function systemPrompt() {
   return 'You write Instagram carousel posts that explain generic (non-code) questions. ' +
@@ -781,4 +827,17 @@ function showTab(id) {
   preview();
 }
 document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+document.querySelectorAll(".help-link").forEach(button => {
+  button.addEventListener("click", () => {
+    const topic = $(button.dataset.helpTarget);
+    if (!topic) return;
+    showTab("sec-edit");
+    $("help").open = true;
+    topic.open = true;
+    requestAnimationFrame(() => {
+      topic.scrollIntoView({behavior: "smooth", block: "center"});
+      topic.querySelector("summary").focus({preventScroll: true});
+    });
+  });
+});
 showTab("sec-edit");
