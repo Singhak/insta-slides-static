@@ -1,7 +1,8 @@
 const $ = id => document.getElementById(id);
 const SIZES = {portrait: [1080, 1350], square: [1080, 1080], story: [1080, 1920]};
 const styleIds = ["size", "bg_type", "bg_color", "bg_color2", "gradient_angle", "overlay", "text_color",
-  "accent_color", "font", "title_size", "body_size", "align", "layout", "handle", "show_numbers", "show_swipe", "show_dots"];
+  "accent_color", "font", "title_size", "body_size", "align", "layout", "handle", "x_handle", "youtube_handle",
+  "show_numbers", "show_swipe", "show_dots"];
 
 let slides = [{title: "Your hook goes here", body: "Click AI Generate or type your own slides."}];
 let sel = 0, bgImage = null;
@@ -58,6 +59,68 @@ function el(tag, css, text) {
   return e;
 }
 
+function socialProfile(platform, value) {
+  const raw = value.trim();
+  if (!raw) return "";
+  let account = raw;
+  const urlCandidate = /^https?:\/\//i.test(raw) ? raw :
+    /(?:instagram\.com|(?:x|twitter)\.com|youtube\.com)\//i.test(raw) ? `https://${raw}` : "";
+  if (urlCandidate) {
+    try {
+      const path = new URL(urlCandidate).pathname.split("/").filter(Boolean);
+      if (platform === "YouTube") {
+        account = path[0]?.startsWith("@") ? path[0] : path.length ? `youtube.com/${path.slice(0, 2).join("/")}` : "";
+      } else account = path[0] || "";
+    } catch {}
+  }
+  account = account.replace(/^@/, "").replace(/\/+$/, "");
+  if (!account) return "";
+  return platform === "YouTube" && account.startsWith("youtube.com/") ? account : `@${account}`;
+}
+
+function socialIcon(platform) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 28 28");
+  svg.setAttribute("width", "28");
+  svg.setAttribute("height", "28");
+  svg.setAttribute("aria-hidden", "true");
+  svg.style.cssText = "display:block;flex:none";
+  const shape = (tag, attrs) => {
+    const node = document.createElementNS(ns, tag);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+    svg.appendChild(node);
+  };
+  if (platform === "Instagram") {
+    const defs = document.createElementNS(ns, "defs");
+    const gradient = document.createElementNS(ns, "linearGradient");
+    gradient.setAttribute("id", "instagram-icon-gradient");
+    gradient.setAttribute("x1", "0");
+    gradient.setAttribute("y1", "1");
+    gradient.setAttribute("x2", "1");
+    gradient.setAttribute("y2", "0");
+    for (const [offset, color] of [["0%", "#feda75"], ["35%", "#fa7e1e"], ["65%", "#d62976"], ["82%", "#962fbf"], ["100%", "#4f5bd5"]]) {
+      const stop = document.createElementNS(ns, "stop");
+      stop.setAttribute("offset", offset);
+      stop.setAttribute("stop-color", color);
+      gradient.appendChild(stop);
+    }
+    defs.appendChild(gradient);
+    svg.appendChild(defs);
+    shape("rect", {x: 2, y: 2, width: 24, height: 24, rx: 7, fill: "url(#instagram-icon-gradient)"});
+    shape("rect", {x: 7, y: 7, width: 14, height: 14, rx: 4, fill: "none", stroke: "#fff", "stroke-width": 2});
+    shape("circle", {cx: 14, cy: 14, r: 3.2, fill: "none", stroke: "#fff", "stroke-width": 2});
+    shape("circle", {cx: 19, cy: 9.5, r: 1.1, fill: "#fff"});
+  } else if (platform === "X") {
+    shape("rect", {x: 2, y: 2, width: 24, height: 24, rx: 7, fill: "#111"});
+    shape("path", {d: "M7 6h4.2l3.6 4.8L19 6h2l-5.3 6.2L21.5 22h-4.2l-4-5.4L8.7 22h-2l5.8-6.8L7 6zm3.3 1.6 8.1 12.8h1.1L11.4 7.6h-1.1z", fill: "#fff"});
+  } else {
+    shape("rect", {x: 2, y: 4, width: 24, height: 20, rx: 6, fill: "#ff0033"});
+    shape("path", {d: "M12 9l7 5-7 5z", fill: "#fff"});
+  }
+  return svg;
+}
+
 function buildSlide(slide, t, idx, total, font) {
   const [w, h] = SIZES[t.size] || SIZES.portrait;
   const img = slide.bg_image || (t.bg_type === "image" ? t.bg_image : null);
@@ -105,11 +168,32 @@ function buildSlide(slide, t, idx, total, font) {
     root.appendChild(dots);
   }
 
+  const accounts = [
+    ["Instagram", socialProfile("Instagram", t.handle)],
+    ["X", socialProfile("X", t.x_handle || "")],
+    ["YouTube", socialProfile("YouTube", t.youtube_handle || "")],
+  ].filter(([, account]) => account);
+  if (accounts.length) {
+    const branding = el("div",
+      "display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:8px 24px;" +
+      "font-size:22px;font-weight:600;line-height:1.2;opacity:.9;margin-top:20px");
+    accounts.forEach(([platform, account]) => {
+      const item = el("div",
+        "display:flex;align-items:center;gap:8px;color:" + t.text_color,
+        account);
+      item.setAttribute("aria-label", `${platform} ${account}`);
+      item.title = platform;
+      item.prepend(socialIcon(platform));
+      branding.appendChild(item);
+    });
+    root.appendChild(branding);
+  }
+
   const foot = el("div", "display:flex;justify-content:space-between;align-items:center;font-size:30px;opacity:.85;min-height:40px");
   const cell = (txt, a, bold) => el("div", `flex:1;text-align:${a};${bold ? "font-weight:600;" : ""}`, txt);
   foot.append(
     cell(t.show_numbers ? `${idx + 1}/${total}` : "", "left"),
-    cell(t.handle, "center", true),
+    cell("", "center", true),
     cell(t.show_swipe && idx < total - 1 ? "swipe →" : "", "right"));
   root.appendChild(foot);
   return {root, main};
@@ -327,7 +411,10 @@ function parseProject(data) {
 
   const importedStyle = {};
   for (const id of styleIds) {
-    if (!(id in data.style)) continue;
+    if (!(id in data.style)) {
+      if (id === "x_handle" || id === "youtube_handle") importedStyle[id] = "";
+      continue;
+    }
     const e = $(id), value = data.style[id];
     if (e.type === "checkbox") {
       if (typeof value !== "boolean") throw new Error(`The "${id}" setting is invalid.`);

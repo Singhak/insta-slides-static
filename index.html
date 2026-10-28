@@ -287,6 +287,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
         <li>Use <b>Portrait 1080×1350</b> for the most feed space. Long text shrinks automatically to fit.</li>
         <li>On photo backgrounds, raise <b>Image darkness</b> so the text stays readable.</li>
         <li>Hindi or other scripts: pick a matching font, e.g. <i>Noto Sans Devanagari</i>.</li>
+        <li>Add Instagram, X, or YouTube handles in Style → Social branding to place your account names on every slide.</li>
       </ul>
     </details>
     <details id="help-troubleshoot"><summary>Troubleshooting</summary>
@@ -340,7 +341,11 @@ button.add{width:100%;border-style:dashed;padding:11px}
       <div><label>Body size</label><input type="number" id="body_size" value="46"></div></div>
     <div class="row"><div><label>Align</label><select id="align"><option>left</option><option>center</option></select></div>
       <div><label>Layout</label><select id="layout"><option>standard</option><option>quote</option><option>bold</option></select></div></div>
-    <label>@handle</label><input id="handle" placeholder="@yourname">
+    <div class="label-with-help"><strong>Social branding</strong><button class="help-link" type="button" data-help-target="help-tips" aria-label="Help with social branding" title="Help: social branding">?</button></div>
+    <div class="hint">Add the accounts you want shown on every slide. Enter a handle or profile URL; leave unused accounts blank.</div>
+    <label for="handle">Instagram</label><input id="handle" placeholder="@yourname or profile URL">
+    <label for="x_handle">X</label><input id="x_handle" placeholder="@yourname or profile URL">
+    <label for="youtube_handle">YouTube</label><input id="youtube_handle" placeholder="@channel or channel URL">
     <label><input type="checkbox" id="show_numbers" checked> Slide numbers</label>
     <label><input type="checkbox" id="show_dots" checked> Progress dots on slides</label>
     <label><input type="checkbox" id="show_swipe" checked> Show “swipe →” hint</label>
