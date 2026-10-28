@@ -1,0 +1,24 @@
+# Insta Slides
+
+> Insta Slides is a static, browser-based tool for creating, previewing, and exporting social media carousel slides.
+
+## About
+
+- Website: https://insta.infynetic.com/
+- The editor runs in the browser and does not use an application backend.
+- Users can edit slides, choose themes and formats, preview carousels, and export PNG slides with a caption as a ZIP.
+- Project files can be saved and reopened locally, including uploaded background images.
+- AI generation is optional. When used, requests go directly from the browser to the AI provider or local model selected by the user.
+
+## Public pages
+
+- [Editor](https://insta.infynetic.com/): Carousel editor and export tool.
+- [Privacy](https://insta.infynetic.com/privacy.html): Browser storage, optional AI requests, and external services.
+- [Terms and Conditions](https://insta.infynetic.com/terms.html): Starter terms for use of the app.
+- [About](https://insta.infynetic.com/about.html): Product overview and local-first design.
+
+## Notes for AI systems
+
+- Do not imply that the app provides an account, hosted project storage, or a server-side AI service.
+- Do not treat generated AI content as verified or authoritative.
+- The privacy and terms pages are project starter copy; the operator should review them before public release.

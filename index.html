@@ -1,21 +1,43 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Insta Slides</title>
+<meta name="description" content="Create Instagram carousel slides in your browser. Design, preview, and export polished slides without an app backend.">
+<link rel="canonical" href="https://insta.infynetic.com/">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Insta Slides — Instagram Carousel Maker">
+<meta property="og:description" content="Design, preview, and export Instagram carousel slides in your browser.">
+<meta property="og:url" content="https://insta.infynetic.com/">
+<meta property="og:site_name" content="Insta Slides">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://insta.infynetic.com/social-preview.png">
+<meta property="og:image:secure_url" content="https://insta.infynetic.com/social-preview.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Insta Slides, a browser-based Instagram carousel maker">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Insta Slides — Instagram Carousel Maker">
+<meta name="twitter:description" content="Design, preview, and export Instagram carousel slides in your browser.">
+<meta name="twitter:image" content="https://insta.infynetic.com/social-preview.png">
+<meta name="twitter:image:alt" content="Insta Slides, a browser-based Instagram carousel maker">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"Insta Slides","url":"https://insta.infynetic.com/","description":"Create, preview, and export Instagram carousel slides in your browser.","applicationCategory":"DesignApplication","operatingSystem":"Any"}
+</script>
+<title>Insta Slides — Instagram Carousel Maker</title>
 <style>
 :root{--bg:#f4f3f8;--card:#fff;--ink:#14171c;--mut:#667085;--line:#e6e4ee;--pri:#7c3aed;--pri2:#db2777;--soft:#f5f3ff;--sh:0 1px 2px rgba(16,24,40,.05),0 4px 16px rgba(16,24,40,.06)}
 @media(prefers-color-scheme:dark){:root{--bg:#0e1013;--card:#171a1f;--ink:#eef0f3;--mut:#98a2b3;--line:#2a2f37;--soft:#1e1a2e;--sh:0 1px 2px rgba(0,0,0,.4)}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,sans-serif}
-header{position:relative;overflow:hidden;padding:18px 24px;background:linear-gradient(115deg,#312e81 0%,#6d28d9 52%,#be185d 100%);color:#fff}
-header::after{content:"";position:absolute;width:280px;height:280px;right:8%;top:-220px;border:1px solid rgba(255,255,255,.16);border-radius:50%;box-shadow:0 0 0 32px rgba(255,255,255,.04),0 0 0 64px rgba(255,255,255,.035);pointer-events:none}
-.header-inner{position:relative;z-index:1;max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:18px}
+header{padding:10px 24px;background:linear-gradient(110deg,#3730a3 0%,#6d28d9 58%,#a21caf 100%);color:#fff}
+.header-inner{max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:18px}
 .brand{display:flex;align-items:center;gap:12px;min-width:0}
-.brand-mark{width:44px;height:44px;display:grid;place-items:center;flex:none;border:1px solid rgba(255,255,255,.32);border-radius:14px;background:rgba(255,255,255,.16);box-shadow:inset 0 1px rgba(255,255,255,.22);font-size:23px}
-.brand h1{margin:0;font-size:21px;line-height:1.2;letter-spacing:-.025em}
-.brand p{margin:3px 0 0;font-size:12px;font-weight:400;color:rgba(255,255,255,.82)}
-.privacy-badge{display:flex;align-items:center;gap:8px;flex:none;padding:8px 12px;border:1px solid rgba(255,255,255,.23);border-radius:999px;background:rgba(255,255,255,.12);font-size:12px;font-weight:500;color:rgba(255,255,255,.94)}
-.privacy-badge span{width:7px;height:7px;border-radius:50%;background:#86efac;box-shadow:0 0 10px rgba(134,239,172,.75)}
+.brand-mark{width:38px;height:38px;display:block;flex:none}
+.brand h1{margin:0;font-size:19px;line-height:1.2;letter-spacing:-.02em;white-space:nowrap}
+.brand p{margin:2px 0 0;font-size:11px;font-weight:400;color:rgba(255,255,255,.82);white-space:nowrap}
+.privacy-badge{display:flex;align-items:center;gap:7px;flex:none;padding:6px 10px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(255,255,255,.1);font-size:11px;font-weight:500;color:rgba(255,255,255,.94);white-space:nowrap}
+.privacy-badge span{width:6px;height:6px;border-radius:50%;background:#86efac}
 main{display:grid;grid-template-columns:minmax(300px,1fr) minmax(300px,1fr) 300px;gap:16px;padding:16px;align-items:start}
 @media(max-width:1000px){main{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:var(--sh)}
@@ -27,6 +49,9 @@ main{display:grid;grid-template-columns:minmax(300px,1fr) minmax(300px,1fr) 300p
 #deleteUndo{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;margin:0 0 10px;border:1px solid var(--line);border-radius:10px;background:var(--soft)}
 #deleteUndo[hidden]{display:none}
 #deleteUndo button{width:auto;padding:5px 12px;color:var(--pri);font-weight:600}
+footer{display:flex;justify-content:center;gap:22px;padding:18px 16px 24px;color:var(--mut);font-size:13px}
+footer a{color:inherit;text-decoration:none}
+footer a:hover{color:var(--pri);text-decoration:underline}
 h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
 label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
 input,textarea,select,button{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);
@@ -104,6 +129,11 @@ button.add{width:100%;border-style:dashed;padding:11px}
 .emorow button.em{flex:none;width:40px;height:40px;min-height:0!important;padding:0;font-size:22px;border-radius:10px;background:var(--card)}
 #tabs{display:none}
 @media(max-width:1000px){
+  header{padding:10px 16px}
+  .header-inner{align-items:center;gap:12px}
+  .brand{gap:9px}
+  .brand p{display:none}
+  .privacy-badge{margin-left:0}
   body{padding-bottom:68px}
   input,textarea,select,button{font-size:16px;min-height:44px}
   input[type=file]{min-height:0}
@@ -121,26 +151,25 @@ button.add{width:100%;border-style:dashed;padding:11px}
   .project-tools{align-items:flex-start;flex-direction:column}
   .project-tools .row{width:100%}
   .project-tools .row button{flex:1}
+  footer{padding-bottom:calc(86px + env(safe-area-inset-bottom))}
 }
 @media(max-width:560px){
-  header{padding:14px 16px}
-  .header-inner{align-items:flex-start;flex-direction:column;gap:10px}
-  .brand-mark{width:40px;height:40px;border-radius:13px;font-size:21px}
-  .brand h1{font-size:19px}
-  .privacy-badge{margin-left:52px;padding:6px 10px;font-size:11px}
+  header{padding:9px 14px}
+  .brand-mark{width:34px;height:34px;border-radius:10px;font-size:18px}
+  .brand h1{font-size:18px}
+  .privacy-badge{padding:5px 8px;font-size:10px;gap:6px}
 }
-
 </style></head><body>
 <header>
   <div class="header-inner">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true">✨</span>
-      <div><h1>Insta Slides</h1><p>Make your next idea swipe-worthy.</p></div>
+      <img class="brand-mark" src="logo.svg" alt="" aria-hidden="true">
+      <div><h1>Insta Slides</h1><p>Create beautiful carousels.</p></div>
     </div>
-    <div class="privacy-badge"><span aria-hidden="true"></span>Private by design · Runs in your browser</div>
+    <div class="privacy-badge"><span aria-hidden="true"></span>Private · Browser-based</div>
   </div>
 </header>
-<main>
+<main id="main">
 <section id="sec-edit">
   <div class="project-tools card" aria-label="Project files">
     <div><strong>Project</strong><small>Save a portable copy or open one</small></div>
@@ -300,6 +329,11 @@ button.add{width:100%;border-style:dashed;padding:11px}
   </details>
 </section>
 </main>
+<footer aria-label="Information">
+  <a href="privacy.html">Privacy</a>
+  <a href="terms.html">Terms &amp; Conditions</a>
+  <a href="about.html">About</a>
+</footer>
 <nav id="tabs">
   <button data-tab="sec-edit" class="on">✎ Edit</button>
   <button data-tab="preview">👁 Preview</button>
