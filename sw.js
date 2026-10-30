@@ -6,6 +6,7 @@ const APP_SHELL = [
   "./privacy.html",
   "./terms.html",
   "./app.js",
+  "./capacitor-adapter.js",
   "./vendor/html-to-image.js",
   "./vendor/jszip.min.js",
   "./logo.svg",

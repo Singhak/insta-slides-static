@@ -657,7 +657,17 @@ function parseProject(data) {
   };
 }
 
-function downloadBlob(blob, filename) {
+function isNativeApp() {
+  return Boolean(window.Capacitor?.isNativePlatform?.());
+}
+
+async function downloadBlob(blob, filename) {
+  if (isNativeApp()) {
+    if (typeof window.saveNativeFile !== "function")
+      throw new Error("Native file sharing is not available. Rebuild the app with npm run cap:sync.");
+    await window.saveNativeFile(blob, filename);
+    return;
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -666,14 +676,20 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-$("saveProject").onclick = () => {
+$("saveProject").onclick = async () => {
   const blob = new Blob([JSON.stringify(projectData(), null, 2)], {type: "application/json"});
   if (blob.size > 50 * 1024 * 1024) {
     $("msg").textContent = "Project is too large to save (maximum 50 MB). Try smaller background images.";
     return;
   }
-  downloadBlob(blob, "instagram-carousel.instaslides.json");
-  $("msg").textContent = "Project saved, including its slide text and uploaded backgrounds.";
+  try {
+    await downloadBlob(blob, "instagram-carousel.instaslides.json");
+    $("msg").textContent = isNativeApp()
+      ? "Choose an app to save or share the project file."
+      : "Project saved, including its slide text and uploaded backgrounds.";
+  } catch (error) {
+    $("msg").textContent = "Could not save project: " + error.message;
+  }
 };
 $("loadProject").onclick = () => $("projectFile").click();
 $("projectFile").onchange = async e => {
@@ -803,13 +819,28 @@ $("gen").onclick = () => reviewBeforeExport($("gen"), async () => {
   for (const f of await renderAll()) zip.file(f.name, f.b64, {base64: true});
   zip.file("caption.txt", captionText());
   const blob = await zip.generateAsync({type: "blob"});
-  downloadBlob(blob, "instagram_post.zip");
-  $("msg").textContent = "Done — zip downloaded.";
+  await downloadBlob(blob, "instagram_post.zip");
+  $("msg").textContent = isNativeApp()
+    ? "Choose an app to save or share the exported zip."
+    : "Done — zip downloaded.";
 });
 
 // Phone share sheet: pick Instagram and the slides arrive as a carousel (caption is copied to the clipboard).
 $("share").onclick = () => reviewBeforeExport($("share"), async () => {
-  const files = (await renderAll()).map(f => new File([b64ToBlob(f.b64)], f.name, {type: "image/png"}));
+  const rendered = await renderAll();
+  if (isNativeApp()) {
+    if (typeof window.shareNativeSlides !== "function")
+      throw new Error("Native sharing is not available. Rebuild the app with npm run cap:sync.");
+    let captionCopied = true;
+    try { await navigator.clipboard.writeText(captionText()); }
+    catch { captionCopied = false; }
+    await window.shareNativeSlides(rendered);
+    $("msg").textContent = captionCopied
+      ? "Caption copied — choose Instagram, then paste it as the caption."
+      : "Slides shared. Copy the caption from Caption & hashtags.";
+    return;
+  }
+  const files = rendered.map(f => new File([b64ToBlob(f.b64)], f.name, {type: "image/png"}));
   if (!navigator.canShare || !navigator.canShare({files})) {
     $("msg").textContent = "This browser can't share images. Use “Generate & download zip” instead.";
     return;

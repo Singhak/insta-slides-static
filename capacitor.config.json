@@ -1,0 +1,8 @@
+{
+  "appId": "com.infynetic.instaslides",
+  "appName": "Insta Slides",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
