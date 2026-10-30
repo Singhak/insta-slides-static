@@ -8,3 +8,11 @@ Desktop.ini
 *.swp
 *.swo
 *~
+
+# Generated Android and web build files
+node_modules/
+www/
+android/.gradle/
+android/local.properties
+android/**/build/
+android/.idea/
