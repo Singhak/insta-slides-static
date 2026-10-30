@@ -1,9 +1,15 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#6d28d9">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="Create Instagram carousel slides in your browser. Design, preview, and export polished slides without an app backend.">
 <link rel="canonical" href="https://insta.infynetic.com/">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Insta Slides — Instagram Carousel Maker">
 <meta property="og:description" content="Design, preview, and export Instagram carousel slides in your browser.">
@@ -38,6 +44,8 @@ header{padding:10px 24px;background:linear-gradient(110deg,#3730a3 0%,#6d28d9 58
 .brand p{margin:2px 0 0;font-size:11px;font-weight:400;color:rgba(255,255,255,.82);white-space:nowrap}
 .privacy-badge{display:flex;align-items:center;gap:7px;flex:none;padding:6px 10px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(255,255,255,.1);font-size:11px;font-weight:500;color:rgba(255,255,255,.94);white-space:nowrap}
 .privacy-badge span{width:6px;height:6px;border-radius:50%;background:#86efac}
+#installApp{flex:none;padding:7px 12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-weight:600;white-space:nowrap}
+#installApp[hidden]{display:none}
 main{display:grid;grid-template-columns:minmax(300px,1fr) minmax(300px,1fr) 300px;gap:16px;padding:16px;align-items:start}
 @media(max-width:1000px){main{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:var(--sh)}
@@ -194,6 +202,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
       <div><h1>Insta Slides</h1><p>Create beautiful carousels.</p></div>
     </div>
     <div class="privacy-badge"><span aria-hidden="true"></span>Private · Browser-based</div>
+    <button id="installApp" type="button" hidden>Install app</button>
   </div>
 </header>
 <main id="main">
@@ -324,6 +333,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
       <ul>
         <li><b>Model detection failed</b>: make sure Ollama is running, use <code>http://localhost:11434/v1</code>, and allow this page in Ollama’s CORS origins. After changing <code>OLLAMA_ORIGINS</code>, restart Ollama and click <b>Detect</b> again.</li>
         <li><b>Font looks different / not loading</b>: fonts come from Google Fonts and need internet. Check the font name spelling.</li>
+        <li><b>Install the app</b>: on Android/Chrome, open Insta Slides over HTTPS and tap <b>Install app</b> (or use the browser menu). On iPhone/iPad, use Share → <b>Add to Home Screen</b>.</li>
         <li><b>Export shows an error</b>: a background image from another website can be blocked; upload the image file instead.</li>
         <li><b>Nothing happens on AI Generate</b>: check that a model is chosen and your question isn’t empty.</li>
         <li>Images are saved to your browser’s downloads folder as <code>instagram_post.zip</code>.</li>

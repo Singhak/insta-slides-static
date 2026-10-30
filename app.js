@@ -1138,3 +1138,40 @@ document.querySelectorAll(".help-link").forEach(button => {
   });
 });
 showTab("sec-edit");
+
+let deferredInstallPrompt;
+const installButton = $("installApp");
+window.addEventListener("beforeinstallprompt", event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  installButton.hidden = false;
+});
+installButton.onclick = async () => {
+  if (!deferredInstallPrompt) return;
+  const prompt = deferredInstallPrompt;
+  deferredInstallPrompt = null;
+  installButton.hidden = true;
+  try {
+    await prompt.prompt();
+    const choice = await prompt.userChoice;
+    if (choice.outcome === "accepted") $("msg").textContent = "Insta Slides is installing.";
+  } catch (error) {
+    console.error("App installation could not be started.", error);
+    $("msg").textContent = "App installation failed: " + error.message;
+  }
+};
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  installButton.hidden = true;
+});
+
+const isSecureAppOrigin = location.protocol === "https:" ||
+  (location.protocol === "http:" && ["localhost", "127.0.0.1"].includes(location.hostname));
+if (isSecureAppOrigin && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(error => {
+      console.error("Offline support could not be enabled.", error);
+      $("msg").textContent = "Offline support couldn't start: " + error.message;
+    });
+  });
+}
