@@ -345,14 +345,38 @@ $("frame").addEventListener("touchend", e => {
 const toData = f => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(f); });
 
 const EMOJIS = ["🔥","✨","💡","🚀","🎯","✅","❌","⚡","💪","🧠","❤️","😍","😂","🤯","👀","🙌","👉","👇","⬆️","📌","⭐","🏆","💰","📈","⏰","🎉","🌟","💎","🔑","📚","🌱","☀️","🌙","🍕","☕","🎧","📱","💻","🇮🇳","🙏"];
-let openIdx = 0, deleteUndoTimer, deletedSlide;
+let openIdx = 0, deleteUndoTimer, deletedSlides = [], selectedSlides = new Set();
+function updateBulkSlideTools() {
+  selectedSlides = new Set([...selectedSlides].filter(slide => slides.includes(slide)));
+  const count = selectedSlides.size;
+  $("selectedSlideCount").textContent = `${count} selected`;
+  $("selectAllSlides").checked = slides.length > 0 && count === slides.length;
+  $("selectAllSlides").indeterminate = count > 0 && count < slides.length;
+  $("deleteSelectedSlides").disabled = count === 0 || count >= slides.length;
+  $("deleteSelectedSlides").setAttribute("aria-label", `Delete ${count} selected slide${count === 1 ? "" : "s"}`);
+  $("deleteSelectedSlides").title = count ? `Delete ${count} selected slide${count === 1 ? "" : "s"}` : "Delete selected slides";
+  $("bulkSlideHint").hidden = count < slides.length;
+}
+
+function recordDeletedSlides(records) {
+  clearTimeout(deleteUndoTimer);
+  deletedSlides = records;
+  $("deleteUndoMessage").textContent = records.length === 1 ? "Slide deleted." : `${records.length} slides deleted.`;
+  $("deleteUndo").hidden = false;
+  deleteUndoTimer = setTimeout(() => {
+    deletedSlides = [];
+    $("deleteUndo").hidden = true;
+  }, 8000);
+}
+
 function renderList() {
   $("slides").innerHTML = "";
   slides.forEach((s, i) => {
     const d = document.createElement("div");
     const isOpen = i === openIdx;
     d.className = "slide" + (i === sel ? " sel" : "") + (isOpen ? "" : " collapsed");
-    d.innerHTML = `<div class="hd"><span class="t"><b>${i + 1}</b><em></em></span><span class="chev">▾</span></div>
+    d.innerHTML = `<div class="hd"><label class="slide-select" aria-label="Select slide ${i + 1}"><input type="checkbox" data-select-slide></label>
+      <span class="t"><b>${i + 1}</b><em></em></span><span class="chev">▾</span></div>
       <div class="bd">
       <div class="rich-editor"><label>Title</label><div class="rich-tools" role="toolbar" aria-label="Title formatting">
       <button type="button" data-format="bold" aria-label="Bold" title="Bold">B</button><button type="button" data-format="italic" aria-label="Italic" title="Italic">I</button>
@@ -390,6 +414,14 @@ function renderList() {
         editor.dispatchEvent(new Event("input", {bubbles: true}));
       };
     });
+    const slideCheckbox = d.querySelector("[data-select-slide]");
+    slideCheckbox.checked = selectedSlides.has(s);
+    slideCheckbox.onclick = event => event.stopPropagation();
+    slideCheckbox.onchange = () => {
+      if (slideCheckbox.checked) selectedSlides.add(s);
+      else selectedSlides.delete(s);
+      updateBulkSlideTools();
+    };
     const row = d.querySelector(".emorow");
     for (const em of EMOJIS) {
       const b = document.createElement("button");
@@ -441,15 +473,10 @@ function renderList() {
       ev.stopPropagation();
       const a = b.dataset.a;
       if (a === "del" && slides.length > 1) {
-        deletedSlide = {slide: s, index: i};
-        clearTimeout(deleteUndoTimer);
-        $("deleteUndo").hidden = false;
+        recordDeletedSlides([{slide: s, index: i}]);
+        selectedSlides.delete(s);
         slides.splice(i, 1);
         sel = Math.min(i, slides.length - 1);
-        deleteUndoTimer = setTimeout(() => {
-          deletedSlide = null;
-          $("deleteUndo").hidden = true;
-        }, 8000);
       }
       if (a === "up" && i > 0) { [slides[i - 1], slides[i]] = [slides[i], slides[i - 1]]; sel = i - 1; }
       if (a === "down" && i < slides.length - 1) { [slides[i + 1], slides[i]] = [slides[i], slides[i + 1]]; sel = i + 1; }
@@ -458,6 +485,7 @@ function renderList() {
     });
     $("slides").appendChild(d);
   });
+  updateBulkSlideTools();
 }
 
 function syncFontPicker() {
@@ -488,10 +516,11 @@ $("fontCustom").oninput = () => {
 };
 
 $("undoDelete").onclick = () => {
-  if (!deletedSlide) return;
-  slides.splice(deletedSlide.index, 0, deletedSlide.slide);
-  sel = openIdx = deletedSlide.index;
-  deletedSlide = null;
+  if (!deletedSlides.length) return;
+  for (const {slide, index} of [...deletedSlides].sort((a, b) => a.index - b.index))
+    slides.splice(index, 0, slide);
+  sel = openIdx = deletedSlides[0].index;
+  deletedSlides = [];
   clearTimeout(deleteUndoTimer);
   $("deleteUndo").hidden = true;
   renderList();
@@ -502,9 +531,26 @@ $("undoDelete").onclick = () => {
 function clearDeletedSlideUndo() {
   clearTimeout(deleteUndoTimer);
   deleteUndoTimer = null;
-  deletedSlide = null;
+  deletedSlides = [];
   $("deleteUndo").hidden = true;
 }
+
+$("selectAllSlides").onchange = () => {
+  selectedSlides = $("selectAllSlides").checked ? new Set(slides) : new Set();
+  renderList();
+};
+$("deleteSelectedSlides").onclick = () => {
+  const targets = slides.map((slide, index) => ({slide, index})).filter(item => selectedSlides.has(item.slide));
+  if (!targets.length || targets.length >= slides.length) return;
+  recordDeletedSlides(targets);
+  const firstIndex = targets[0].index;
+  slides = slides.filter(slide => !selectedSlides.has(slide));
+  selectedSlides.clear();
+  sel = Math.min(firstIndex, slides.length - 1);
+  openIdx = sel;
+  renderList();
+  preview();
+};
 
 styleIds.forEach(id => $(id).addEventListener("input", preview));
 $("bgfile").onchange = async e => {

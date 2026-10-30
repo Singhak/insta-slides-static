@@ -49,6 +49,12 @@ main{display:grid;grid-template-columns:minmax(300px,1fr) minmax(300px,1fr) 300p
 #deleteUndo{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;margin:0 0 10px;border:1px solid var(--line);border-radius:10px;background:var(--soft)}
 #deleteUndo[hidden]{display:none}
 #deleteUndo button{width:auto;padding:5px 12px;color:var(--pri);font-weight:600}
+#bulkSlideTools{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+#bulkSlideTools label{display:flex;align-items:center;gap:7px;margin:0;white-space:nowrap}
+#bulkSlideTools button{width:42px;min-height:42px;flex:none;margin-left:auto;padding:8px;color:#d92d20}
+#bulkSlideTools button svg{display:block;width:20px;height:20px;margin:auto}
+#bulkSlideTools button:disabled{cursor:not-allowed}
+#bulkSlideHint{margin:-6px 0 8px}
 footer{display:flex;justify-content:center;gap:22px;padding:18px 16px 24px;color:var(--mut);font-size:13px}
 footer a{color:inherit;text-decoration:none}
 footer a:hover{color:var(--pri);text-decoration:underline}
@@ -117,6 +123,8 @@ details.card:not([open])>summary::after{transform:rotate(-90deg)}
 details.card[open]>summary{margin-bottom:10px}
 .slide{padding:0;overflow:hidden}
 .slide .hd{margin:0;padding:10px 12px;cursor:pointer;gap:8px;min-height:46px}
+.slide .hd .slide-select{display:flex;align-items:center;margin:0;cursor:pointer}
+.slide .hd .slide-select input{width:18px;height:18px;margin:0}
 .slide .hd .t{flex:1;min-width:0;display:flex;gap:8px;align-items:center}
 .slide .hd .t b{flex:none;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:0 7px;font-size:12px}
 .slide .hd .t em{font-style:normal;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mut)}
@@ -242,8 +250,18 @@ button.add{width:100%;border-style:dashed;padding:11px}
   <details class="card" open>
     <summary>Slides</summary>
     <div id="deleteUndo" role="status" aria-live="polite" hidden>
-      <span>Slide deleted.</span><button id="undoDelete" type="button">Undo</button>
+      <span id="deleteUndoMessage">Slide deleted.</span><button id="undoDelete" type="button">Undo</button>
     </div>
+    <div id="bulkSlideTools">
+      <label><input id="selectAllSlides" type="checkbox"> Select all</label>
+      <span id="selectedSlideCount" aria-live="polite">0 selected</span>
+      <button id="deleteSelectedSlides" type="button" aria-label="Delete selected slides" title="Delete selected slides" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 6h18M8 6V4h8v2m3 0-.9 14H5.9L5 6m4 4v6m6-6v6"/>
+        </svg>
+      </button>
+    </div>
+    <div id="bulkSlideHint" class="hint" hidden>At least one slide must remain. Unselect a slide to delete the rest.</div>
     <div id="slides"></div>
     <button id="add" class="add">+ Add slide</button>
   </details>
