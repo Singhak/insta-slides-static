@@ -59,6 +59,94 @@ function el(tag, css, text) {
   return e;
 }
 
+const richTags = new Set(["b", "strong", "i", "em", "u", "br", "p", "div", "ul", "ol", "li"]);
+const richMarkupPattern = /<\/?(?:b|strong|i|em|u|br|p|div|ul|ol|li)\b[^>]*>/i;
+function sanitizeRichHtml(value) {
+  const parsed = new DOMParser().parseFromString(String(value || ""), "text/html");
+  const safe = document.createElement("div");
+  const copy = (node, parent) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      parent.appendChild(document.createTextNode(node.textContent));
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const tag = node.tagName.toLowerCase();
+    if (["script", "style", "iframe", "object", "svg", "math"].includes(tag)) return;
+    const style = node.style;
+    const wrappers = [];
+    if (tag === "b" || tag === "strong" || /^(bold|[6-9]00)$/.test(style.fontWeight)) wrappers.push("strong");
+    if (tag === "i" || tag === "em" || style.fontStyle === "italic" || style.fontStyle === "oblique") wrappers.push("em");
+    if (tag === "u" || /underline/i.test(style.textDecorationLine || style.textDecoration)) wrappers.push("u");
+    let target = parent;
+    for (const wrapper of wrappers) {
+      const element = document.createElement(wrapper);
+      target.appendChild(element);
+      target = element;
+    }
+    if (richTags.has(tag) && !["b", "strong", "i", "em", "u"].includes(tag)) {
+      const element = document.createElement(tag);
+      target.appendChild(element);
+      target = element;
+    }
+    for (const child of node.childNodes) copy(child, target);
+  };
+  for (const child of parsed.body.childNodes) copy(child, safe);
+  return safe.innerHTML;
+}
+
+function insertPastedContent(editor, clipboard) {
+  const html = clipboard.getData("text/html");
+  const plain = clipboard.getData("text/plain");
+  const content = document.createElement("div");
+  if (html) content.innerHTML = sanitizeRichHtml(html);
+  else {
+    for (const [index, line] of plain.split(/\r\n?|\n/).entries()) {
+      if (index) content.appendChild(document.createElement("br"));
+      content.appendChild(document.createTextNode(line));
+    }
+  }
+  if (!content.hasChildNodes()) return false;
+
+  const selection = window.getSelection();
+  const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+  const insideEditor = range && editor.contains(range.commonAncestorContainer);
+  if (insideEditor) range.deleteContents();
+  else {
+    editor.focus();
+    const end = document.createRange();
+    end.selectNodeContents(editor);
+    end.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(end);
+  }
+  const targetRange = selection.getRangeAt(0);
+  const fragment = document.createDocumentFragment();
+  while (content.firstChild) fragment.appendChild(content.firstChild);
+  const lastNode = fragment.lastChild;
+  targetRange.insertNode(fragment);
+  if (lastNode) {
+    targetRange.setStartAfter(lastNode);
+    targetRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(targetRange);
+  }
+  editor.dispatchEvent(new Event("input", {bubbles: true}));
+  return true;
+}
+
+function setRichContent(element, value) {
+  const text = String(value || "");
+  if (richMarkupPattern.test(text)) element.innerHTML = sanitizeRichHtml(text);
+  else element.textContent = text;
+}
+
+function richTextToPlainText(value) {
+  if (!richMarkupPattern.test(String(value || ""))) return String(value || "");
+  const source = String(value).replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<li\b[^>]*>/gi, "• ").replace(/<\/li>/gi, "\n").replace(/<\/(?:div|p)>/gi, "\n");
+  return new DOMParser().parseFromString(source, "text/html").body.textContent || "";
+}
+
 function socialProfile(platform, value) {
   const raw = value.trim();
   if (!raw) return "";
@@ -142,13 +230,19 @@ function buildSlide(slide, t, idx, total, font) {
   main.appendChild(el("div", `width:120px;height:10px;border-radius:5px;background:${t.accent_color};flex:none`));
   if (slide.title) {
     const ts = t.title_size * (t.layout === "bold" ? 1.15 : 1);
-    main.appendChild(el("div", `font-size:${ts}px;font-weight:800;line-height:1.12;color:${t.accent_color};white-space:pre-wrap;flex:none`, slide.title)).className = "fit";
+    const title = el("div", `font-size:${ts}px;font-weight:800;line-height:1.12;color:${t.accent_color};white-space:pre-wrap;flex:none`);
+    title.className = "slide-rich";
+    setRichContent(title, slide.title);
+    title.classList.add("fit");
+    main.appendChild(title);
   }
   if (slide.body) {
     const b = el("div",
       `font-size:${t.body_size}px;font-weight:${t.layout === "quote" ? 600 : 400};line-height:1.4;white-space:pre-wrap;flex:none;` +
-      (t.layout === "quote" ? "font-style:italic;" : ""), slide.body);
-    b.className = "fit";
+      (t.layout === "quote" ? "font-style:italic;" : ""));
+    b.className = "slide-rich";
+    setRichContent(b, slide.body);
+    b.classList.add("fit");
     main.appendChild(b);
   }
   root.appendChild(main);
@@ -259,7 +353,15 @@ function renderList() {
     const isOpen = i === openIdx;
     d.className = "slide" + (i === sel ? " sel" : "") + (isOpen ? "" : " collapsed");
     d.innerHTML = `<div class="hd"><span class="t"><b>${i + 1}</b><em></em></span><span class="chev">▾</span></div>
-      <div class="bd"><input data-f="title" placeholder="Title"><textarea data-f="body" placeholder="Body"></textarea>
+      <div class="bd">
+      <div class="rich-editor"><label>Title</label><div class="rich-tools" role="toolbar" aria-label="Title formatting">
+      <button type="button" data-format="bold" aria-label="Bold" title="Bold">B</button><button type="button" data-format="italic" aria-label="Italic" title="Italic">I</button>
+      <button type="button" data-format="underline" aria-label="Underline" title="Underline">U</button><button type="button" data-format="insertUnorderedList" aria-label="Bulleted list" title="Bulleted list">•</button></div>
+      <div data-f="title" contenteditable="true" role="textbox" aria-label="Slide title" aria-multiline="true" data-placeholder="Title"></div></div>
+      <div class="rich-editor"><label>Body</label><div class="rich-tools" role="toolbar" aria-label="Body formatting">
+      <button type="button" data-format="bold" aria-label="Bold" title="Bold">B</button><button type="button" data-format="italic" aria-label="Italic" title="Italic">I</button>
+      <button type="button" data-format="underline" aria-label="Underline" title="Underline">U</button><button type="button" data-format="insertUnorderedList" aria-label="Bulleted list" title="Bulleted list">•</button></div>
+      <div data-f="body" contenteditable="true" role="textbox" aria-label="Slide body" aria-multiline="true" data-placeholder="Body"></div></div>
       <label>Own background for this slide <input type="file" data-f="img" accept="image/*"></label>
       <div class="emo"><label>Emojis &amp; stickers — tap one to add it to the field you last clicked</label>
       <div class="emorow"></div>
@@ -270,15 +372,24 @@ function renderList() {
       <div class="acts"><button data-a="up" title="Move up">↑</button><button data-a="down" title="Move down">↓</button>
       <button data-a="dup">Duplicate</button><button data-a="del" class="del">Delete</button></div></div>`;
     const label = d.querySelector("em");
-    const setLabel = () => { label.textContent = s.title || s.body || "(empty)"; };
+    const setLabel = () => { label.textContent = richTextToPlainText(s.title || s.body) || "(empty)"; };
     setLabel();
-    d.querySelector("[data-f=title]").value = s.title;
-    d.querySelector("[data-f=body]").value = s.body;
+    setRichContent(d.querySelector("[data-f=title]"), s.title);
+    setRichContent(d.querySelector("[data-f=body]"), s.body);
     d.querySelector("[data-f=sticker]").value = s.sticker || "";
     d.querySelector("[data-f=stickerPos]").value = s.stickerPos || "tr";
     d.querySelector("[data-f=stickerSize]").value = s.stickerSize || "m";
     let last = d.querySelector("[data-f=title]");
     d.querySelectorAll("[data-f=title],[data-f=body],[data-f=sticker]").forEach(e => e.addEventListener("focus", () => { last = e; }));
+    d.querySelectorAll("[data-format]").forEach(button => {
+      button.onmousedown = event => event.preventDefault();
+      button.onclick = () => {
+        const editor = button.closest(".rich-editor").querySelector("[contenteditable=true]");
+        editor.focus();
+        document.execCommand(button.dataset.format, false);
+        editor.dispatchEvent(new Event("input", {bubbles: true}));
+      };
+    });
     const row = d.querySelector(".emorow");
     for (const em of EMOJIS) {
       const b = document.createElement("button");
@@ -287,7 +398,21 @@ function renderList() {
       b.onclick = ev => {
         ev.stopPropagation();
         if (last.dataset.f === "sticker") last.value = em;
-        else {
+        else if (last.isContentEditable) {
+          const selection = window.getSelection();
+          const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+          const insideEditor = range && last.contains(range.commonAncestorContainer);
+          const node = document.createTextNode(em);
+          if (insideEditor) {
+            range.deleteContents();
+            range.insertNode(node);
+            range.setStartAfter(node);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          } else last.appendChild(node);
+          last.focus();
+        } else {
           const p = last.selectionStart ?? last.value.length;
           last.value = last.value.slice(0, p) + em + last.value.slice(last.selectionEnd ?? p);
           last.setSelectionRange?.(p + em.length, p + em.length);
@@ -299,9 +424,18 @@ function renderList() {
     d.querySelector(".hd").onclick = () => {
       openIdx = isOpen ? -1 : i; sel = i; renderList(); preview();
     };
-    d.querySelectorAll("input[data-f],textarea,select[data-f]").forEach(e => {
+    d.querySelectorAll("[data-f]").forEach(e => {
       if (e.dataset.f === "img") e.onchange = async () => { s.bg_image = e.files[0] ? await toData(e.files[0]) : null; preview(); };
-      else e.oninput = () => { s[e.dataset.f] = e.value; setLabel(); preview(); };
+      else {
+        e.oninput = () => {
+          s[e.dataset.f] = e.isContentEditable ? sanitizeRichHtml(e.innerHTML) : e.value;
+          setLabel();
+          preview();
+        };
+        if (e.isContentEditable) e.onpaste = event => {
+          if (insertPastedContent(e, event.clipboardData)) event.preventDefault();
+        };
+      }
     });
     d.querySelectorAll("button[data-a]").forEach(b => b.onclick = ev => {
       ev.stopPropagation();
@@ -325,6 +459,33 @@ function renderList() {
     $("slides").appendChild(d);
   });
 }
+
+function syncFontPicker() {
+  const font = $("font").value || "Poppins";
+  const preset = $("fontPreset");
+  preset.value = [...preset.options].some(option => option.value === font) ? font : "__custom__";
+  $("fontCustom").value = preset.value === "__custom__" ? font : "";
+  $("fontCustom").classList.toggle("hidden", preset.value !== "__custom__");
+}
+
+$("fontPreset").onchange = () => {
+  const preset = $("fontPreset").value;
+  if (preset === "__custom__") {
+    $("fontCustom").value = "";
+    $("fontCustom").classList.remove("hidden");
+    $("fontCustom").focus();
+    return;
+  }
+  $("font").value = preset;
+  $("fontCustom").classList.add("hidden");
+  preview();
+};
+$("fontCustom").oninput = () => {
+  const font = $("fontCustom").value.trim();
+  if (!font) return;
+  $("font").value = font;
+  preview();
+};
 
 $("undoDelete").onclick = () => {
   if (!deletedSlide) return;
@@ -487,6 +648,7 @@ $("projectFile").onchange = async e => {
       if (e.type === "checkbox") e.checked = value;
       else e.value = value;
     }
+    syncFontPicker();
     $("caption").value = project.caption;
     $("tags").value = project.tags;
     $("q").value = project.question;
@@ -533,7 +695,7 @@ async function busy(btn, fn) {
 function preflightWarnings() {
   const warnings = [];
   slides.forEach((slide, i) => {
-    const title = (slide.title || "").trim(), body = (slide.body || "").trim();
+    const title = richTextToPlainText(slide.title).trim(), body = richTextToPlainText(slide.body).trim();
     const titleWords = title ? title.split(/\s+/).length : 0;
     const bodyWords = body ? body.split(/\s+/).length : 0;
     if (!title && !body) warnings.push(`Slide ${i + 1} is empty.`);
@@ -862,6 +1024,7 @@ const THEMES = {
 };
 function applyTheme(name) {
   for (const [k, v] of Object.entries(THEMES[name])) $(k).value = v;
+  syncFontPicker();
   preview();
 }
 for (const [name, t] of Object.entries(THEMES)) {
@@ -900,6 +1063,7 @@ function loadDraft() {
 }
 ["caption", "tags", "q"].forEach(id => $(id).addEventListener("input", saveDraftSoon));
 loadDraft();
+syncFontPicker();
 
 renderList();
 preview();

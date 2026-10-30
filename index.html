@@ -123,6 +123,18 @@ details.card[open]>summary{margin-bottom:10px}
 .slide.sel .hd .t em{color:var(--ink)}
 .slide .hd .chev{color:var(--mut);transition:transform .15s}.slide.collapsed .chev{transform:rotate(-90deg)}
 .slide .bd{padding:0 12px 12px}.slide.collapsed .bd{display:none}
+.rich-editor{margin:8px 0}
+.rich-editor>label{margin:0 0 3px}
+.rich-tools{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-bottom:0;border-radius:10px 10px 0 0;background:var(--soft)}
+.rich-tools button{width:36px;min-height:32px;padding:3px 8px;border-radius:7px;background:var(--card);font-weight:700}
+.rich-tools button[aria-label="Italic"]{font-style:italic}
+.rich-tools button[aria-label="Underline"]{text-decoration:underline}
+.slide-rich ul,.rich-editor [contenteditable=true] ul{list-style:disc;padding-left:1.2em;margin:.2em 0}
+.slide-rich ol,.rich-editor [contenteditable=true] ol{list-style:decimal;padding-left:1.2em;margin:.2em 0}
+.slide-rich li,.rich-editor [contenteditable=true] li{margin:.12em 0}
+.rich-editor [contenteditable=true]{min-height:52px;padding:8px 11px;border:1px solid var(--line);border-radius:0 0 10px 10px;background:var(--bg);white-space:pre-wrap;overflow-wrap:anywhere}
+.rich-editor [contenteditable=true]:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px color-mix(in srgb,var(--pri) 22%,transparent)}
+.rich-editor [contenteditable=true]:empty::before{content:attr(data-placeholder);color:var(--mut);pointer-events:none}
 .slide .acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 .slide .acts button{flex:1;padding:8px}
 .slide .acts .del{color:#d92d20}
@@ -245,7 +257,7 @@ button.add{width:100%;border-style:dashed;padding:11px}
     <details open id="help-quickstart"><summary>Quick start</summary>
       <ol>
         <li>Edit slides directly, or expand <b>Create slides with AI</b> to generate a draft (AI is optional).</li>
-        <li>Edit text, caption and hashtags. Style it on the right; the preview updates live.</li>
+        <li>Paste formatted slide text or use B/I/U and list buttons for bold, italic, underline and lists. Style it on the right; the preview updates live.</li>
         <li>Use <b>Save project</b> to download a portable project file (including uploaded backgrounds); <b>Open project</b> restores it in this browser.</li>
         <li>Click <b>Generate &amp; download zip</b> → PNG slides + <code>caption.txt</code>. A local readability/content check runs first.</li>
         <li>Upload the PNGs to Instagram as a carousel and paste the caption.</li>
@@ -332,11 +344,17 @@ button.add{width:100%;border-style:dashed;padding:11px}
     <label>Image darkness</label><input type="range" id="overlay" min="0" max="0.9" step="0.05" value="0.45">
     <div class="row"><div><label>Text</label><input type="color" id="text_color" value="#ffffff"></div>
       <div><label>Accent</label><input type="color" id="accent_color" value="#facc15"></div></div>
-    <label>Font (any Google Font)</label>
-    <input id="font" list="fonts" value="Poppins">
-    <datalist id="fonts"><option>Poppins</option><option>Montserrat</option><option>Playfair Display</option>
+    <label for="fontPreset">Font</label>
+    <select id="fontPreset">
+      <option>Poppins</option><option>Montserrat</option><option>Playfair Display</option>
       <option>Bebas Neue</option><option>Lora</option><option>Oswald</option><option>Inter</option>
-      <option>Noto Sans Devanagari</option><option>Pacifico</option></datalist>
+      <option>Noto Sans Devanagari</option><option>Noto Serif Devanagari</option><option>Mukta</option>
+      <option>Hind</option><option>Roboto</option><option>Merriweather</option><option>Nunito</option>
+      <option>Raleway</option><option>Lato</option><option>Open Sans</option><option>Pacifico</option>
+      <option value="__custom__">Custom Google Font…</option>
+    </select>
+    <input id="font" type="hidden" value="Poppins">
+    <input id="fontCustom" class="hidden" placeholder="Enter Google Font name" aria-label="Custom Google Font name">
     <div class="row"><div><label>Title size</label><input type="number" id="title_size" value="84"></div>
       <div><label>Body size</label><input type="number" id="body_size" value="46"></div></div>
     <div class="row"><div><label>Align</label><select id="align"><option>left</option><option>center</option></select></div>
